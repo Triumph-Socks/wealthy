@@ -1,29 +1,29 @@
-{% extends 'expenses/base.html' %}
+{% extends 'base.html' %}
 
 {% block title %}Expenses - Expense Tracker{% endblock %}
 
 {% block content %}
-<div class="page-header d-flex justify-content-between align-items-center">
-    <div>
-        <h1 class="page-title">All Expenses</h1>
-        <p class="page-subtitle">View and manage all your recorded expenses</p>
+<div class="space-y-6">
+    <!-- Page Header -->
+    <div class="flex items-center justify-between">
+        <h1 class="text-2xl font-bold text-gradient">All Expenses</h1>
+        <div class="flex gap-3">
+            <button onclick="document.getElementById('importCsvModal').classList.remove('hidden')" 
+                    class="px-4 py-2 bg-green-600 hover:bg-green-700 rounded-lg text-sm font-medium transition-colors">
+                Import CSV
+            </button>
+            <button onclick="document.getElementById('addExpenseModal').classList.remove('hidden')" 
+                    class="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg text-sm font-medium transition-colors">
+                Add Expense
+            </button>
+        </div>
     </div>
-    <div>
-        <button type="button" class="btn btn-gradient" data-bs-toggle="modal" data-bs-target="#addExpenseModal">
-            <i class="bi bi-plus-lg me-2"></i>Add Expense
-        </button>
-        <button type="button" class="btn btn-gradient btn-gradient-success" data-bs-toggle="modal" data-bs-target="#importCsvModal">
-            <i class="bi bi-upload me-2"></i>Import CSV
-        </button>
-    </div>
-</div>
 
-<!-- Filters -->
-<div class="filter-section">
-    <form method="get" class="row g-3 align-items-end">
-        <div class="col-md-3">
-            <label class="form-label small fw-semibold">Category</label>
-            <select name="category" class="form-select select2-filter" style="width: 100%;">
+    <!-- Filters -->
+    <div class="glass-card p-4">
+        <form method="get" class="flex flex-wrap gap-4">
+            <select name="category" onchange="this.form.submit()" 
+                    class="bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-sm focus:outline-none focus:border-blue-500">
                 <option value="">All Categories</option>
                 {% for category in categories %}
                 <option value="{{ category.id }}" {% if request.GET.category == category.id|stringformat:"s" %}selected{% endif %}>
@@ -31,10 +31,9 @@
                 </option>
                 {% endfor %}
             </select>
-        </div>
-        <div class="col-md-3">
-            <label class="form-label small fw-semibold">Shop</label>
-            <select name="shop" class="form-select select2-filter" style="width: 100%;">
+            
+            <select name="shop" onchange="this.form.submit()" 
+                    class="bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-sm focus:outline-none focus:border-blue-500">
                 <option value="">All Shops</option>
                 {% for shop in shops %}
                 <option value="{{ shop.id }}" {% if request.GET.shop == shop.id|stringformat:"s" %}selected{% endif %}>
@@ -42,233 +41,254 @@
                 </option>
                 {% endfor %}
             </select>
-        </div>
-        <div class="col-md-2">
-            <label class="form-label small fw-semibold">From Date</label>
-            <input type="date" name="start_date" class="form-control form-control-glass" value="{{ request.GET.start_date }}">
-        </div>
-        <div class="col-md-2">
-            <label class="form-label small fw-semibold">To Date</label>
-            <input type="date" name="end_date" class="form-control form-control-glass" value="{{ request.GET.end_date }}">
-        </div>
-        <div class="col-md-2 d-flex gap-2">
-            <button type="submit" class="btn btn-gradient flex-grow-1">
-                <i class="bi bi-search"></i> Filter
+            
+            <input type="date" name="start_date" value="{{ request.GET.start_date }}" 
+                   class="bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-sm focus:outline-none focus:border-blue-500"
+                   placeholder="Start Date">
+            
+            <input type="date" name="end_date" value="{{ request.GET.end_date }}" 
+                   class="bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-sm focus:outline-none focus:border-blue-500"
+                   placeholder="End Date">
+            
+            <button type="submit" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg text-sm font-medium transition-colors">
+                Filter
             </button>
-            <a href="{% url 'expense_list' %}" class="btn btn-outline-secondary" title="Clear filters">
-                <i class="bi bi-x-lg"></i>
+            <a href="{% url 'expense_list' %}" class="px-4 py-2 bg-gray-600 hover:bg-gray-700 rounded-lg text-sm font-medium transition-colors">
+                Reset
             </a>
-        </div>
-    </form>
-</div>
-
-<!-- Expenses Table -->
-<div class="glass-card p-4">
-    <div class="d-flex justify-content-between align-items-center mb-3">
-        <h5 class="mb-0"><i class="bi bi-receipt me-2"></i>Expense Records</h5>
-        <span class="badge badge-glass badge-glass-primary" id="totalRecords">0 records</span>
+        </form>
     </div>
-    <div class="table-responsive">
-        <table class="table table-glass" id="expensesTable">
-            <thead>
-                <tr>
-                    <th>Date</th>
-                    <th>Product</th>
-                    <th>Category</th>
-                    <th>Shop</th>
-                    <th>Qty</th>
-                    <th>Price/Unit</th>
-                    <th>Total</th>
-                    <th>Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for expense in expenses %}
-                <tr>
-                    <td>{{ expense.purchase_date|date:"M d, Y" }}</td>
-                    <td><span class="fw-semibold">{{ expense.product.name }}</span></td>
-                    <td><span class="badge badge-glass badge-glass-primary">{{ expense.product.category.name }}</span></td>
-                    <td>{{ expense.shop.name }}</td>
-                    <td>{{ expense.quantity }} <small class="text-muted">{{ expense.product.unit }}</small></td>
-                    <td>${{ expense.price_per_unit|floatformat:2 }}</td>
-                    <td><strong class="text-primary">${{ expense.total_price|floatformat:2 }}</strong></td>
-                    <td>
-                        <div class="d-flex gap-1">
-                            <button class="btn btn-action btn-action-view" data-bs-toggle="tooltip" title="View Details" onclick="viewExpense({{ expense.id }})">
-                                <i class="bi bi-eye"></i>
-                            </button>
-                            <button class="btn btn-action btn-action-delete" data-bs-toggle="tooltip" title="Delete" onclick="confirmDelete({{ expense.id }})">
-                                <i class="bi bi-trash"></i>
-                            </button>
-                        </div>
-                    </td>
-                </tr>
-                {% empty %}
-                <tr>
-                    <td colspan="8" class="text-center text-muted py-5">
-                        <i class="bi bi-inbox fs-1 d-block mb-3"></i>
-                        No expenses found. Start by adding your first expense!
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+
+    <!-- Expenses Table -->
+    <div class="glass-card overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full" id="expensesTable">
+                <thead>
+                    <tr class="text-left text-xs text-gray-400 uppercase border-b border-white/10">
+                        <th class="p-4 font-medium">Date</th>
+                        <th class="p-4 font-medium">Product</th>
+                        <th class="p-4 font-medium">Category</th>
+                        <th class="p-4 font-medium">Shop</th>
+                        <th class="p-4 font-medium">Qty</th>
+                        <th class="p-4 font-medium">Price</th>
+                        <th class="p-4 font-medium">Total</th>
+                        <th class="p-4 font-medium">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="text-sm">
+                    {% for expense in expenses %}
+                    <tr class="border-b border-white/5 last:border-0 hover:bg-white/5 transition-colors">
+                        <td class="p-4">{{ expense.purchase_date|date:"M d, Y" }}</td>
+                        <td class="p-4 font-medium">{{ expense.product.name }}</td>
+                        <td class="p-4">
+                            <span class="px-2 py-1 bg-blue-500/20 text-blue-400 rounded text-xs">
+                                {{ expense.product.category.name }}
+                            </span>
+                        </td>
+                        <td class="p-4 text-gray-400">{{ expense.shop.name }}</td>
+                        <td class="p-4">{{ expense.quantity }}</td>
+                        <td class="p-4 text-gray-400">${{ expense.price_per_unit|floatformat:2 }}</td>
+                        <td class="p-4 font-semibold text-green-400">${{ expense.total_price|floatformat:2 }}</td>
+                        <td class="p-4">
+                            <div class="flex gap-2">
+                                <button onclick="viewExpense({{ expense.id }}, '{{ expense.product.name }}', '{{ expense.shop.name }}', {{ expense.quantity }}, {{ expense.price_per_unit }}, '{{ expense.purchase_date|date:"Y-m-d" }}', '{{ expense.notes|escapejs }}')" 
+                                        class="p-1 text-blue-400 hover:text-blue-300" title="View">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                                    </svg>
+                                </button>
+                                <form method="post" action="{% url 'expense_delete' expense.id %}" onsubmit="return confirm('Are you sure you want to delete this expense?');">
+                                    {% csrf_token %}
+                                    <button type="submit" class="p-1 text-red-400 hover:text-red-300" title="Delete">
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                        </svg>
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="8" class="p-8 text-center text-gray-400">
+                            No expenses found. Add your first expense!
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
     </div>
 </div>
 
 <!-- Add Expense Modal -->
-<div class="modal fade modal-glass" id="addExpenseModal" tabindex="-1">
-    <div class="modal-dialog modal-lg modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title"><i class="bi bi-plus-circle me-2"></i>Add New Expense</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+<div id="addExpenseModal" class="fixed inset-0 bg-black/60 hidden items-center justify-center z-50">
+    <div class="glass-card p-6 w-full max-w-md mx-4 relative">
+        <button onclick="document.getElementById('addExpenseModal').classList.add('hidden')" 
+                class="absolute top-4 right-4 text-gray-400 hover:text-white">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+            </svg>
+        </button>
+        
+        <h3 class="text-xl font-bold mb-4">Add New Expense</h3>
+        
+        <form method="post" action="{% url 'expense_add' %}" class="space-y-4">
+            {% csrf_token %}
+            
+            <div>
+                <label class="block text-sm text-gray-400 mb-1">Product *</label>
+                <select name="product" required class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-sm focus:outline-none focus:border-blue-500">
+                    <option value="">Select product...</option>
+                    {% for product in products %}
+                    <option value="{{ product.id }}">{{ product.name }} ({{ product.category.name }})</option>
+                    {% endfor %}
+                </select>
             </div>
-            <form method="post" action="{% url 'expense_add' %}">
-                {% csrf_token %}
-                <div class="modal-body">
-                    <div class="row g-3">
-                        <div class="col-md-6">
-                            <label class="form-label small fw-semibold">Product <span class="text-danger">*</span></label>
-                            <select name="product" class="form-select select2-modal" style="width: 100%;" required>
-                                <option value="">Choose a product...</option>
-                                {% for product in products %}
-                                <option value="{{ product.id }}">{{ product.name }} ({{ product.category.name }})</option>
-                                {% endfor %}
-                            </select>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label small fw-semibold">Shop <span class="text-danger">*</span></label>
-                            <select name="shop" class="form-select select2-modal" style="width: 100%;" required>
-                                <option value="">Choose a shop...</option>
-                                {% for shop in shops %}
-                                <option value="{{ shop.id }}">{{ shop.name }}</option>
-                                {% endfor %}
-                            </select>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label small fw-semibold">Quantity <span class="text-danger">*</span></label>
-                            <input type="number" step="0.001" name="quantity" id="quantityInput" class="form-control form-control-glass" required placeholder="Enter quantity">
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label small fw-semibold">Price per Unit <span class="text-danger">*</span></label>
-                            <input type="number" step="0.01" name="price_per_unit" id="priceInput" class="form-control form-control-glass" required placeholder="$0.00">
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label small fw-semibold">Purchase Date <span class="text-danger">*</span></label>
-                            <input type="date" name="purchase_date" class="form-control form-control-glass" required value="{% now 'Y-m-d' %}">
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label small fw-semibold">Total Price</label>
-                            <input type="text" id="totalPriceDisplay" class="form-control form-control-glass" readonly placeholder="$0.00">
-                        </div>
-                        <div class="col-12">
-                            <label class="form-label small fw-semibold">Notes</label>
-                            <textarea name="notes" class="form-control form-control-glass" rows="3" placeholder="Add any notes..."></textarea>
-                        </div>
-                    </div>
+            
+            <div>
+                <label class="block text-sm text-gray-400 mb-1">Shop *</label>
+                <select name="shop" required class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-sm focus:outline-none focus:border-blue-500">
+                    <option value="">Select shop...</option>
+                    {% for shop in shops %}
+                    <option value="{{ shop.id }}">{{ shop.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm text-gray-400 mb-1">Quantity *</label>
+                    <input type="number" step="0.01" name="quantity" required 
+                           class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-sm focus:outline-none focus:border-blue-500">
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-gradient"><i class="bi bi-check-lg me-2"></i>Save Expense</button>
+                <div>
+                    <label class="block text-sm text-gray-400 mb-1">Price per Unit *</label>
+                    <input type="number" step="0.01" name="price_per_unit" required 
+                           class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-sm focus:outline-none focus:border-blue-500">
                 </div>
-            </form>
+            </div>
+            
+            <div>
+                <label class="block text-sm text-gray-400 mb-1">Purchase Date</label>
+                <input type="date" name="purchase_date" value="{% now 'Y-m-d' %}" 
+                       class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-sm focus:outline-none focus:border-blue-500">
+            </div>
+            
+            <div>
+                <label class="block text-sm text-gray-400 mb-1">Notes</label>
+                <textarea name="notes" rows="2" 
+                          class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-sm focus:outline-none focus:border-blue-500"></textarea>
+            </div>
+            
+            <div class="flex gap-3 pt-4">
+                <button type="button" onclick="document.getElementById('addExpenseModal').classList.add('hidden')" 
+                        class="flex-1 px-4 py-2 bg-gray-600 hover:bg-gray-700 rounded-lg text-sm font-medium transition-colors">
+                    Cancel
+                </button>
+                <button type="submit" 
+                        class="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg text-sm font-medium transition-colors">
+                    Add Expense
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- View Expense Modal -->
+<div id="viewExpenseModal" class="fixed inset-0 bg-black/60 hidden items-center justify-center z-50">
+    <div class="glass-card p-6 w-full max-w-md mx-4 relative">
+        <button onclick="document.getElementById('viewExpenseModal').classList.add('hidden')" 
+                class="absolute top-4 right-4 text-gray-400 hover:text-white">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+            </svg>
+        </button>
+        
+        <h3 class="text-xl font-bold mb-4">Expense Details</h3>
+        
+        <div class="space-y-3">
+            <div class="flex justify-between">
+                <span class="text-gray-400">Product:</span>
+                <span id="viewProduct" class="font-medium"></span>
+            </div>
+            <div class="flex justify-between">
+                <span class="text-gray-400">Shop:</span>
+                <span id="viewShop"></span>
+            </div>
+            <div class="flex justify-between">
+                <span class="text-gray-400">Quantity:</span>
+                <span id="viewQuantity"></span>
+            </div>
+            <div class="flex justify-between">
+                <span class="text-gray-400">Price per Unit:</span>
+                <span id="viewPrice"></span>
+            </div>
+            <div class="flex justify-between">
+                <span class="text-gray-400">Total:</span>
+                <span id="viewTotal" class="font-semibold text-green-400"></span>
+            </div>
+            <div class="flex justify-between">
+                <span class="text-gray-400">Date:</span>
+                <span id="viewDate"></span>
+            </div>
+            <div>
+                <span class="text-gray-400 block mb-1">Notes:</span>
+                <p id="viewNotes" class="text-sm"></p>
+            </div>
         </div>
     </div>
 </div>
 
 <!-- Import CSV Modal -->
-<div class="modal fade modal-glass" id="importCsvModal" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title"><i class="bi bi-upload me-2"></i>Import Expenses from CSV</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+<div id="importCsvModal" class="fixed inset-0 bg-black/60 hidden items-center justify-center z-50">
+    <div class="glass-card p-6 w-full max-w-md mx-4 relative">
+        <button onclick="document.getElementById('importCsvModal').classList.add('hidden')" 
+                class="absolute top-4 right-4 text-gray-400 hover:text-white">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+            </svg>
+        </button>
+        
+        <h3 class="text-xl font-bold mb-4">Import from CSV</h3>
+        
+        <form method="post" action="{% url 'import_csv' %}" enctype="multipart/form-data" class="space-y-4">
+            {% csrf_token %}
+            
+            <div>
+                <label class="block text-sm text-gray-400 mb-1">CSV File *</label>
+                <input type="file" name="csv_file" accept=".csv" required 
+                       class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-sm focus:outline-none focus:border-blue-500">
+                <p class="text-xs text-gray-500 mt-2">
+                    Expected columns: product_name, shop_name, quantity, price_per_unit, purchase_date, notes (optional)
+                </p>
             </div>
-            <form method="post" action="{% url 'import_csv' %}" enctype="multipart/form-data">
-                {% csrf_token %}
-                <div class="modal-body">
-                    <div class="alert alert-info mb-3">
-                        <i class="bi bi-info-circle me-2"></i>CSV columns: product_name, shop_name, quantity, price_per_unit, purchase_date, notes (optional)
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label small fw-semibold">Select CSV File</label>
-                        <input type="file" name="csv_file" class="form-control form-control-glass" accept=".csv" required>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-gradient btn-gradient-success"><i class="bi bi-upload me-2"></i>Import</button>
-                </div>
-            </form>
-        </div>
+            
+            <div class="flex gap-3 pt-4">
+                <button type="button" onclick="document.getElementById('importCsvModal').classList.add('hidden')" 
+                        class="flex-1 px-4 py-2 bg-gray-600 hover:bg-gray-700 rounded-lg text-sm font-medium transition-colors">
+                    Cancel
+                </button>
+                <button type="submit" 
+                        class="flex-1 px-4 py-2 bg-green-600 hover:bg-green-700 rounded-lg text-sm font-medium transition-colors">
+                    Import
+                </button>
+            </div>
+        </form>
     </div>
 </div>
 
-<!-- View Expense Modal -->
-<div class="modal fade modal-glass" id="viewExpenseModal" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title"><i class="bi bi-receipt me-2"></i>Expense Details</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body" id="expenseDetailsContent"></div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
-            </div>
-        </div>
-    </div>
-</div>
-{% endblock %}
-
-{% block extra_js %}
 <script>
-$(document).ready(function() {
-    $('#expensesTable').DataTable({
-        responsive: true, pageLength: 10, lengthMenu: [10, 25, 50, 100],
-        dom: '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>>rtip',
-        order: [[0, 'desc']],
-        language: { search: "Search:", lengthMenu: "Show _MENU_ entries", info: "Showing _START_ to _END_ of _TOTAL_ entries" },
-        initComplete: function() { $('#totalRecords').text(this.api().data().length + ' records'); }
-    });
-
-    $('.select2-filter').select2({ theme: 'bootstrap-5', allowClear: true });
-    
-    $('.select2-modal').each(function() {
-        $(this).select2({ theme: 'bootstrap-5', dropdownParent: $(this).closest('.modal'), allowClear: true });
-    });
-
-    $('#quantityInput, #priceInput').on('input', function() {
-        const qty = parseFloat($('#quantityInput').val()) || 0;
-        const price = parseFloat($('#priceInput').val()) || 0;
-        $('#totalPriceDisplay').val('$' + (qty * price).toFixed(2));
-    });
-
-    $('[data-bs-toggle="tooltip"]').tooltip();
-});
-
-function viewExpense(id) {
-    $.ajax({
-        url: '/api/expense/' + id + '/',
-        success: function(data) {
-            $('#expenseDetailsContent').html('<div class="row g-3">' +
-                '<div class="col-6"><strong>Date:</strong></div><div class="col-6">' + data.purchase_date + '</div>' +
-                '<div class="col-6"><strong>Product:</strong></div><div class="col-6">' + data.product + '</div>' +
-                '<div class="col-6"><strong>Category:</strong></div><div class="col-6">' + data.category + '</div>' +
-                '<div class="col-6"><strong>Shop:</strong></div><div class="col-6">' + data.shop + '</div>' +
-                '<div class="col-6"><strong>Quantity:</strong></div><div class="col-6">' + data.quantity + ' ' + data.unit + '</div>' +
-                '<div class="col-6"><strong>Price/Unit:</strong></div><div class="col-6">$' + data.price_per_unit + '</div>' +
-                '<div class="col-6"><strong>Total:</strong></div><div class="col-6"><strong class="text-primary">$' + data.total_price + '</strong></div>' +
-                (data.notes ? '<div class="col-12"><strong>Notes:</strong><br>' + data.notes + '</div>' : '') +
-                '</div>');
-            new bootstrap.Modal(document.getElementById('viewExpenseModal')).show();
-        },
-        error: function() {
-            $('#expenseDetailsContent').html('<p class="text-danger">Error loading details.</p>');
-            new bootstrap.Modal(document.getElementById('viewExpenseModal')).show();
-        }
-    });
+function viewExpense(id, product, shop, quantity, price, date, notes) {
+    document.getElementById('viewProduct').textContent = product;
+    document.getElementById('viewShop').textContent = shop;
+    document.getElementById('viewQuantity').textContent = quantity;
+    document.getElementById('viewPrice').textContent = '$' + parseFloat(price).toFixed(2);
+    document.getElementById('viewTotal').textContent = '$' + (quantity * price).toFixed(2);
+    document.getElementById('viewDate').textContent = date;
+    document.getElementById('viewNotes').textContent = notes || 'No notes';
+    document.getElementById('viewExpenseModal').classList.remove('hidden');
 }
 </script>
 {% endblock %}
