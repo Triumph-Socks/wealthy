@@ -1,83 +1,69 @@
-{% extends 'expenses/base.html' %}
-{% load custom_filters %}
+{% extends 'base.html' %}
 
 {% block title %}Shop Comparison - Expense Tracker{% endblock %}
 
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <h1 class="h3 mb-0 text-gray-800">Shop Price Comparison</h1>
-    <p class="text-muted">Find the best shop for each product</p>
-</div>
+<div class="space-y-6">
+    <!-- Page Header -->
+    <div class="flex items-center justify-between">
+        <h1 class="text-2xl font-bold text-gradient">Shop Comparison</h1>
+        <p class="text-gray-400 text-sm">Find the best prices across shops</p>
+    </div>
 
-{% if comparisons %}
-<div class="card">
-    <div class="card-body">
-        <div class="table-responsive">
-            <table class="table table-hover">
+    <!-- Comparisons Table -->
+    <div class="glass-card p-6">
+        {% if comparisons %}
+        <div class="overflow-x-auto">
+            <table class="w-full">
                 <thead>
-                    <tr>
-                        <th>Product</th>
-                        <th>Best Shop</th>
-                        <th>Best Price</th>
-                        <th>Highest Price</th>
-                        <th>Potential Savings</th>
-                        <th>All Shops</th>
+                    <tr class="text-left text-xs text-gray-400 uppercase border-b border-white/10">
+                        <th class="pb-3 font-medium">Product</th>
+                        <th class="pb-3 font-medium">Best Shop</th>
+                        <th class="pb-3 font-medium">Best Price</th>
+                        <th class="pb-3 font-medium">Worst Price</th>
+                        <th class="pb-3 font-medium">Savings</th>
+                        <th class="pb-3 font-medium">Price Range</th>
                     </tr>
                 </thead>
-                <tbody>
+                <tbody class="text-sm">
                     {% for item in comparisons %}
-                    <tr>
-                        <td>
-                            <strong>{{ item.product.name }}</strong><br>
-                            <small class="text-muted">{{ item.product.category.name }}</small>
+                    <tr class="border-b border-white/5 last:border-0 hover:bg-white/5 transition-colors">
+                        <td class="py-3 font-medium">{{ item.product.name }}</td>
+                        <td class="py-3">
+                            <span class="px-2 py-1 bg-green-500/20 text-green-400 rounded text-xs">
+                                {{ item.best_shop }}
+                            </span>
                         </td>
-                        <td>
-                            <span class="badge bg-success">{{ item.best_shop }}</span>
+                        <td class="py-3 text-green-400 font-semibold">${{ item.min_price|floatformat:2 }}</td>
+                        <td class="py-3 text-red-400">${{ item.max_price|floatformat:2 }}</td>
+                        <td class="py-3">
+                            <span class="px-2 py-1 bg-blue-500/20 text-blue-400 rounded text-xs">
+                                ${{ item.savings|floatformat:2 }}
+                            </span>
                         </td>
-                        <td>
-                            <strong class="text-success">${{ item.min_price|floatformat:2 }}</strong>
-                        </td>
-                        <td>
-                            <span class="text-danger">${{ item.max_price|floatformat:2 }}</span>
-                        </td>
-                        <td>
-                            <span class="badge bg-info">${{ item.savings|floatformat:2 }} ({{ item.savings|divide:item.max_price|multiply:100|floatformat:0 }}%)</span>
-                        </td>
-                        <td>
-                            {% for shop, price in item.prices.items %}
-                            <span class="badge {% if price == item.min_price %}bg-success{% else %}bg-secondary{% endif %}">
-                                {{ shop }}: ${{ price|floatformat:2 }}
-                            </span><br>
-                            {% endfor %}
+                        <td class="py-3">
+                            <div class="flex gap-1 flex-wrap">
+                                {% for shop_name, price in item.prices.items %}
+                                <span class="px-2 py-0.5 bg-gray-700/50 rounded text-xs" title="{{ shop_name }}">
+                                    ${{ price|floatformat:2 }}
+                                </span>
+                                {% endfor %}
+                            </div>
                         </td>
                     </tr>
                     {% endfor %}
                 </tbody>
             </table>
         </div>
-    </div>
-</div>
-{% else %}
-<div class="alert alert-info">
-    <i class="bi bi-info-circle"></i> No price comparison data available yet. Start recording expenses at different shops to see comparisons.
-</div>
-{% endif %}
-
-<div class="row mt-4">
-    <div class="col-md-6">
-        <div class="card">
-            <div class="card-header">
-                <i class="bi bi-lightbulb"></i> Tips for Smart Shopping
-            </div>
-            <div class="card-body">
-                <ul class="list-unstyled">
-                    <li class="mb-2"><i class="bi bi-check text-success"></i> Compare prices across multiple shops before buying</li>
-                    <li class="mb-2"><i class="bi bi-check text-success"></i> Track price trends to buy when prices are low</li>
-                    <li class="mb-2"><i class="bi bi-check text-success"></i> Consider bulk buying for items with stable prices</li>
-                    <li class="mb-2"><i class="bi bi-check text-success"></i> Watch for seasonal price fluctuations</li>
-                </ul>
-            </div>
+        {% else %}
+        <div class="text-center py-12 text-gray-400">
+            <svg class="w-16 h-16 mx-auto mb-4 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+            </svg>
+            <p>No comparison data available yet.</p>
+            <p class="text-sm mt-2">Add expenses from multiple shops for the same products to see comparisons.</p>
         </div>
+        {% endif %}
     </div>
 </div>
 {% endblock %}

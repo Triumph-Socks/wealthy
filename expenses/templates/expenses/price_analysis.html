@@ -1,127 +1,161 @@
-{% extends 'expenses/base.html' %}
+{% extends 'base.html' %}
 
 {% block title %}Price Analysis - Expense Tracker{% endblock %}
 
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <h1 class="h3 mb-0 text-gray-800">Price Analysis & Inflation Tracking</h1>
-</div>
-
-<div class="card mb-4">
-    <div class="card-body">
-        <form method="get" class="row g-3 align-items-end">
-            <div class="col-md-6">
-                <label for="product" class="form-label">Select Product to Analyze</label>
-                <select name="product" id="product" class="form-select">
-                    <option value="">-- Select a Product --</option>
-                    {% for product in products %}
-                    <option value="{{ product.id }}" {% if selected_product and selected_product.id == product.id %}selected{% endif %}>
-                        {{ product.name }} ({{ product.category.name }})
-                    </option>
-                    {% endfor %}
-                </select>
-            </div>
-            <div class="col-md-2">
-                <button type="submit" class="btn btn-primary w-100">
-                    <i class="bi bi-search"></i> Analyze
-                </button>
-            </div>
+<div class="space-y-6">
+    <!-- Page Header -->
+    <div class="flex items-center justify-between">
+        <h1 class="text-2xl font-bold text-gradient">Price Analysis</h1>
+        
+        <!-- Product Selector -->
+        <form method="get" class="flex gap-3">
+            <select name="product" onchange="this.form.submit()" 
+                    class="bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-sm focus:outline-none focus:border-blue-500">
+                <option value="">Select a product...</option>
+                {% for product in products %}
+                <option value="{{ product.id }}" {% if selected_product.id == product.id %}selected{% endif %}>
+                    {{ product.name }}
+                </option>
+                {% endfor %}
+            </select>
         </form>
     </div>
+
+    {% if selected_product %}
+    <!-- Price Chart -->
+    <div class="glass-card p-6">
+        <h3 class="text-lg font-semibold mb-4">Price Trend for {{ selected_product.name }}</h3>
+        <canvas id="priceChart" height="100"></canvas>
+    </div>
+
+    <!-- Price by Shop Table -->
+    <div class="glass-card p-6">
+        <h3 class="text-lg font-semibold mb-4">Current Prices by Shop</h3>
+        {% if price_data %}
+        <div class="overflow-x-auto">
+            <table class="w-full">
+                <thead>
+                    <tr class="text-left text-xs text-gray-400 uppercase border-b border-white/10">
+                        <th class="pb-3 font-medium">Shop</th>
+                        <th class="pb-3 font-medium">Current Price</th>
+                        <th class="pb-3 font-medium">Lowest Price</th>
+                        <th class="pb-3 font-medium">Highest Price</th>
+                        <th class="pb-3 font-medium">Trend</th>
+                    </tr>
+                </thead>
+                <tbody class="text-sm">
+                    {% for shop_name, records in price_data.items %}
+                    {% with first_price=records|first %}
+                    {% with last_price=records|last %}
+                    <tr class="border-b border-white/5 last:border-0 hover:bg-white/5 transition-colors">
+                        <td class="py-3 font-medium">{{ shop_name }}</td>
+                        <td class="py-3 text-blue-400">${{ last_price.price|floatformat:2 }}</td>
+                        <td class="py-3 text-green-400">${% widthratio first_price.price 1 1 %}</td>
+                        <td class="py-3 text-red-400">${% widthratio last_price.price 1 1 %}</td>
+                        <td class="py-3">
+                            {% if last_price.price > first_price.price %}
+                            <span class="px-2 py-1 bg-red-500/20 text-red-400 rounded text-xs">↑ Increased</span>
+                            {% elif last_price.price < first_price.price %}
+                            <span class="px-2 py-1 bg-green-500/20 text-green-400 rounded text-xs">↓ Decreased</span>
+                            {% else %}
+                            <span class="px-2 py-1 bg-gray-500/20 text-gray-400 rounded text-xs">→ Stable</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endwith %}
+                    {% endwith %}
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% endif %}
+    </div>
+    {% else %}
+    <!-- Empty State -->
+    <div class="glass-card p-12 text-center">
+        <svg class="w-16 h-16 mx-auto mb-4 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"/>
+        </svg>
+        <p class="text-gray-400">Select a product to view its price analysis</p>
+    </div>
+    {% endif %}
 </div>
 
 {% if selected_product and price_data %}
-<div class="row">
-    <div class="col-12">
-        <div class="card">
-            <div class="card-header">
-                <i class="bi bi-graph-up"></i> Price Trend for {{ selected_product.name }}
-            </div>
-            <div class="card-body">
-                <div class="chart-container" style="height: 400px;">
-                    <canvas id="priceChart"></canvas>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<div class="row mt-4">
-    {% for shop_name, prices in price_data.items %}
-    <div class="col-md-6 col-lg-4 mb-4">
-        <div class="card">
-            <div class="card-header bg-primary text-white">
-                {{ shop_name }}
-            </div>
-            <div class="card-body">
-                <h5 class="card-title">Price History</h5>
-                <ul class="list-group list-group-flush">
-                    {% for record in prices|slice:":10" %}
-                    <li class="list-group-item d-flex justify-content-between">
-                        <span>{{ record.date|date:"M d, Y" }}</span>
-                        <strong>${{ record.price|floatformat:2 }}</strong>
-                    </li>
-                    {% endfor %}
-                </ul>
-            </div>
-        </div>
-    </div>
-    {% endfor %}
-</div>
-{% elif selected_product %}
-<div class="alert alert-info">
-    <i class="bi bi-info-circle"></i> No price history available for this product. Start recording expenses to track prices.
-</div>
-{% else %}
-<div class="alert alert-info">
-    <i class="bi bi-info-circle"></i> Select a product above to view its price history and inflation analysis.
-</div>
-{% endif %}
-{% endblock %}
-
-{% block extra_js %}
-{% if price_data and selected_product %}
 <script>
-const ctx = document.getElementById('priceChart').getContext('2d');
-
-// Get labels from the first shop's data
-const priceDataValues = Object.values({{ price_data|safe }});
-const firstShopData = priceDataValues.length > 0 ? priceDataValues[0] : [];
-
-new Chart(ctx, {
-    type: 'line',
-    data: {
-        labels: [{% for shop_name, prices in price_data.items %}{% if forloop.first %}{% for record in prices|slice:":10" %}'{{ record.date|date:"M d" }}'{% if not forloop.last %}, {% endif %}{% endfor %}{% endif %}{% endfor %}],
-        datasets: [
-            {% for shop_name, prices in price_data.items %}
-            {
-                label: '{{ shop_name }}',
-                data: [{% for record in prices|slice:":10" %}{{ record.price }}{% if not forloop.last %}, {% endif %}{% endfor %}],
-                borderColor: '{% cycle "#4e73df" "#1cc88a" "#36b9cc" "#f6c23e" "#e74a3b" "#858796" %}',
-                tension: 0.4
+document.addEventListener('DOMContentLoaded', function() {
+    const ctx = document.getElementById('priceChart').getContext('2d');
+    
+    // Prepare datasets for each shop
+    const datasets = [];
+    const colors = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
+    let colorIndex = 0;
+    
+    {% for shop_name, records in price_data.items %}
+    datasets.push({
+        label: '{{ shop_name }}',
+        data: [{% for record in records %}{ x: '{{ record.date|date:"Y-m-d" }}', y: {{ record.price }} }{% if not forloop.last %}, {% endif %}{% endfor %}],
+        borderColor: colors[{{ colorIndex }} % colors|length],
+        backgroundColor: colors[{{ colorIndex }} % colors|length] + '20',
+        tension: 0.4,
+        fill: false
+    });
+    {% endfor %}
+    
+    new Chart(ctx, {
+        type: 'line',
+        data: { datasets: datasets },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    labels: {
+                        color: '#e5e7eb',
+                        usePointStyle: true,
+                        pointStyle: 'circle'
+                    }
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return context.dataset.label + ': $' + context.parsed.y.toFixed(2);
+                        }
+                    }
+                }
             },
-            {% endfor %}
-        ]
-    },
-    options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-            title: {
-                display: true,
-                text: 'Price Comparison Across Shops'
-            }
-        },
-        scales: {
-            y: {
-                beginAtZero: false,
-                title: {
-                    display: true,
-                    text: 'Price ($)'
+            scales: {
+                y: {
+                    beginAtZero: false,
+                    grid: {
+                        color: 'rgba(255, 255, 255, 0.05)'
+                    },
+                    ticks: {
+                        color: '#9ca3af',
+                        callback: function(value) {
+                            return '$' + value;
+                        }
+                    }
+                },
+                x: {
+                    type: 'time',
+                    time: {
+                        unit: 'week',
+                        displayFormats: {
+                            week: 'MMM dd'
+                        }
+                    },
+                    grid: {
+                        display: false
+                    },
+                    ticks: {
+                        color: '#9ca3af'
+                    }
                 }
             }
         }
-    }
+    });
 });
 </script>
 {% endif %}
