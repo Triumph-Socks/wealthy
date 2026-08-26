@@ -2,7 +2,11 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.db.models import Sum, Avg, Count, Q, F
 from django.db.models.functions import TruncMonth, TruncDate
 from django.utils import timezone
+from django.contrib import messages
+from django.http import JsonResponse
 from datetime import datetime, timedelta
+import csv
+import io
 from .models import Category, Shop, Product, Expense, PriceHistory, Budget
 
 
@@ -124,34 +128,49 @@ def expense_list(request):
 def add_expense(request):
     """Add a new expense."""
     if request.method == 'POST':
-        product_id = request.POST.get('product')
-        shop_id = request.POST.get('shop')
-        quantity = request.POST.get('quantity')
-        price_per_unit = request.POST.get('price_per_unit')
-        purchase_date = request.POST.get('purchase_date')
-        notes = request.POST.get('notes')
-        
-        product = get_object_or_404(Product, id=product_id)
-        shop = get_object_or_404(Shop, id=shop_id)
-        
-        expense = Expense.objects.create(
-            product=product,
-            shop=shop,
-            quantity=quantity,
-            price_per_unit=price_per_unit,
-            purchase_date=purchase_date or timezone.now().date(),
-            notes=notes
-        )
-        
-        # Create/update price history
-        PriceHistory.objects.create(
-            product=product,
-            shop=shop,
-            price_per_unit=price_per_unit,
-            recorded_date=purchase_date or timezone.now().date()
-        )
-        
-        return redirect('expense_list')
+        try:
+            product_id = request.POST.get('product')
+            shop_id = request.POST.get('shop')
+            quantity = request.POST.get('quantity')
+            price_per_unit = request.POST.get('price_per_unit')
+            purchase_date = request.POST.get('purchase_date')
+            notes = request.POST.get('notes')
+            
+            if not product_id or not shop_id or not quantity or not price_per_unit:
+                messages.error(request, 'Please fill in all required fields.')
+                products = Product.objects.select_related('category').order_by('name')
+                shops = Shop.objects.order_by('name')
+                return render(request, 'expenses/add_expense.html', {'products': products, 'shops': shops})
+            
+            product = get_object_or_404(Product, id=product_id)
+            shop = get_object_or_404(Shop, id=shop_id)
+            
+            quantity = float(quantity)
+            price_per_unit = float(price_per_unit)
+            
+            expense = Expense.objects.create(
+                product=product,
+                shop=shop,
+                quantity=quantity,
+                price_per_unit=price_per_unit,
+                purchase_date=purchase_date or timezone.now().date(),
+                notes=notes
+            )
+            
+            # Create/update price history
+            PriceHistory.objects.create(
+                product=product,
+                shop=shop,
+                price_per_unit=price_per_unit,
+                recorded_date=purchase_date or timezone.now().date()
+            )
+            
+            messages.success(request, 'Expense added successfully!')
+            return redirect('expense_list')
+        except ValueError as e:
+            messages.error(request, f'Invalid number format: {str(e)}')
+        except Exception as e:
+            messages.error(request, f'Error adding expense: {str(e)}')
     
     products = Product.objects.select_related('category').order_by('name')
     shops = Shop.objects.order_by('name')
@@ -268,6 +287,110 @@ def category_report(request):
 
 def delete_expense(request, expense_id):
     """Delete an expense."""
-    expense = get_object_or_404(Expense, id=expense_id)
-    expense.delete()
+    if request.method == 'POST':
+        try:
+            expense = get_object_or_404(Expense, id=expense_id)
+            expense.delete()
+            messages.success(request, 'Expense deleted successfully!')
+        except Exception as e:
+            messages.error(request, f'Error deleting expense: {str(e)}')
+    
     return redirect('expense_list')
+
+
+def import_csv(request):
+    """Import expenses from CSV file."""
+    if request.method == 'POST':
+        csv_file = request.FILES.get('csv_file')
+        
+        if not csv_file:
+            messages.error(request, 'No file uploaded.')
+            return redirect('expense_list')
+        
+        try:
+            # Decode the file
+            decoded_file = csv_file.read().decode('utf-8')
+            io_string = io.StringIO(decoded_file)
+            reader = csv.DictReader(io_string)
+            
+            imported_count = 0
+            error_count = 0
+            errors = []
+            
+            for row_num, row in enumerate(reader, start=2):  # Start from 2 (header is row 1)
+                try:
+                    # Expected columns: product_name, shop_name, quantity, price_per_unit, purchase_date, notes (optional)
+                    product_name = row.get('product_name', '').strip()
+                    shop_name = row.get('shop_name', '').strip()
+                    quantity = row.get('quantity', '').strip()
+                    price_per_unit = row.get('price_per_unit', '').strip()
+                    purchase_date = row.get('purchase_date', '').strip()
+                    notes = row.get('notes', '').strip()
+                    
+                    if not all([product_name, shop_name, quantity, price_per_unit]):
+                        errors.append(f"Row {row_num}: Missing required fields")
+                        error_count += 1
+                        continue
+                    
+                    # Get or create product
+                    product, _ = Product.objects.get_or_create(
+                        name=product_name,
+                        defaults={'category': Category.objects.first()}
+                    )
+                    
+                    # Get or create shop
+                    shop, _ = Shop.objects.get_or_create(name=shop_name)
+                    
+                    # Create expense
+                    Expense.objects.create(
+                        product=product,
+                        shop=shop,
+                        quantity=float(quantity),
+                        price_per_unit=float(price_per_unit),
+                        purchase_date=purchase_date or timezone.now().date(),
+                        notes=notes
+                    )
+                    
+                    # Create price history
+                    PriceHistory.objects.create(
+                        product=product,
+                        shop=shop,
+                        price_per_unit=float(price_per_unit),
+                        recorded_date=purchase_date or timezone.now().date()
+                    )
+                    
+                    imported_count += 1
+                    
+                except Exception as e:
+                    errors.append(f"Row {row_num}: {str(e)}")
+                    error_count += 1
+            
+            if imported_count > 0:
+                messages.success(request, f'Successfully imported {imported_count} expenses.')
+            if error_count > 0:
+                error_msg = f'{error_count} errors occurred. ' + '; '.join(errors[:5])
+                if error_count > 5:
+                    error_msg += f' and {error_count - 5} more...'
+                messages.warning(request, error_msg)
+            
+        except Exception as e:
+            messages.error(request, f'Error processing CSV file: {str(e)}')
+    
+    return redirect('expense_list')
+
+
+def get_products_json(request):
+    """API endpoint to get products as JSON for searchable dropdowns."""
+    category_id = request.GET.get('category_id')
+    if category_id:
+        products = Product.objects.filter(category_id=category_id).values('id', 'name', 'category__name')
+    else:
+        products = Product.objects.values('id', 'name', 'category__name')
+    
+    return JsonResponse(list(products), safe=False)
+
+
+def get_shops_json(request):
+    """API endpoint to get shops as JSON for searchable dropdowns."""
+    shops = Shop.objects.values('id', 'name')
+    return JsonResponse(list(shops), safe=False)

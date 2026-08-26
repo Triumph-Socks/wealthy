@@ -1,23 +1,29 @@
-{% extends 'base.html' %}
+{% extends 'expenses/base.html' %}
 
 {% block title %}Expenses - Expense Tracker{% endblock %}
 
-{% block page_title %}All Expenses{% endblock %}
-{% block page_subtitle %}View and manage all your recorded expenses{% endblock %}
-
-{% block header_actions %}
-<button type="button" class="btn btn-primary-glass text-white" data-bs-toggle="modal" data-bs-target="#addExpenseModal">
-    <i class="bi bi-plus-lg me-2"></i>Add Expense
-</button>
-{% endblock %}
-
 {% block content %}
+<div class="page-header d-flex justify-content-between align-items-center">
+    <div>
+        <h1 class="page-title">All Expenses</h1>
+        <p class="page-subtitle">View and manage all your recorded expenses</p>
+    </div>
+    <div>
+        <button type="button" class="btn btn-gradient" data-bs-toggle="modal" data-bs-target="#addExpenseModal">
+            <i class="bi bi-plus-lg me-2"></i>Add Expense
+        </button>
+        <button type="button" class="btn btn-gradient btn-gradient-success" data-bs-toggle="modal" data-bs-target="#importCsvModal">
+            <i class="bi bi-upload me-2"></i>Import CSV
+        </button>
+    </div>
+</div>
+
 <!-- Filters -->
-<div class="glass-card p-4 mb-4">
-    <form method="get" class="row g-3">
+<div class="filter-section">
+    <form method="get" class="row g-3 align-items-end">
         <div class="col-md-3">
-            <label class="form-label">Category</label>
-            <select name="category" class="form-select select2" data-placeholder="Select category">
+            <label class="form-label small fw-semibold">Category</label>
+            <select name="category" class="form-select select2-filter" style="width: 100%;">
                 <option value="">All Categories</option>
                 {% for category in categories %}
                 <option value="{{ category.id }}" {% if request.GET.category == category.id|stringformat:"s" %}selected{% endif %}>
@@ -27,8 +33,8 @@
             </select>
         </div>
         <div class="col-md-3">
-            <label class="form-label">Shop</label>
-            <select name="shop" class="form-select select2" data-placeholder="Select shop">
+            <label class="form-label small fw-semibold">Shop</label>
+            <select name="shop" class="form-select select2-filter" style="width: 100%;">
                 <option value="">All Shops</option>
                 {% for shop in shops %}
                 <option value="{{ shop.id }}" {% if request.GET.shop == shop.id|stringformat:"s" %}selected{% endif %}>
@@ -38,18 +44,18 @@
             </select>
         </div>
         <div class="col-md-2">
-            <label class="form-label">From Date</label>
-            <input type="date" name="start_date" class="form-control" value="{{ request.GET.start_date }}">
+            <label class="form-label small fw-semibold">From Date</label>
+            <input type="date" name="start_date" class="form-control form-control-glass" value="{{ request.GET.start_date }}">
         </div>
         <div class="col-md-2">
-            <label class="form-label">To Date</label>
-            <input type="date" name="end_date" class="form-control" value="{{ request.GET.end_date }}">
+            <label class="form-label small fw-semibold">To Date</label>
+            <input type="date" name="end_date" class="form-control form-control-glass" value="{{ request.GET.end_date }}">
         </div>
-        <div class="col-md-2 d-flex align-items-end gap-2">
-            <button type="submit" class="btn btn-primary-glass text-white flex-grow-1">
+        <div class="col-md-2 d-flex gap-2">
+            <button type="submit" class="btn btn-gradient flex-grow-1">
                 <i class="bi bi-search"></i> Filter
             </button>
-            <a href="{% url 'expense_list' %}" class="btn btn-glass" title="Clear filters">
+            <a href="{% url 'expense_list' %}" class="btn btn-outline-secondary" title="Clear filters">
                 <i class="bi bi-x-lg"></i>
             </a>
         </div>
@@ -57,23 +63,22 @@
 </div>
 
 <!-- Expenses Table -->
-<div class="table-container p-4">
+<div class="glass-card p-4">
     <div class="d-flex justify-content-between align-items-center mb-3">
         <h5 class="mb-0"><i class="bi bi-receipt me-2"></i>Expense Records</h5>
-        <span class="badge bg-primary" id="totalRecords">0 records</span>
+        <span class="badge badge-glass badge-glass-primary" id="totalRecords">0 records</span>
     </div>
     <div class="table-responsive">
-        <table class="table table-hover" id="expensesTable">
+        <table class="table table-glass" id="expensesTable">
             <thead>
                 <tr>
                     <th>Date</th>
                     <th>Product</th>
                     <th>Category</th>
                     <th>Shop</th>
-                    <th>Quantity</th>
+                    <th>Qty</th>
                     <th>Price/Unit</th>
                     <th>Total</th>
-                    <th>Notes</th>
                     <th>Actions</th>
                 </tr>
             </thead>
@@ -81,25 +86,26 @@
                 {% for expense in expenses %}
                 <tr>
                     <td>{{ expense.purchase_date|date:"M d, Y" }}</td>
-                    <td><span class="fw-medium">{{ expense.product.name }}</span></td>
-                    <td><span class="badge bg-light text-dark border">{{ expense.product.category.name }}</span></td>
+                    <td><span class="fw-semibold">{{ expense.product.name }}</span></td>
+                    <td><span class="badge badge-glass badge-glass-primary">{{ expense.product.category.name }}</span></td>
                     <td>{{ expense.shop.name }}</td>
                     <td>{{ expense.quantity }} <small class="text-muted">{{ expense.product.unit }}</small></td>
                     <td>${{ expense.price_per_unit|floatformat:2 }}</td>
                     <td><strong class="text-primary">${{ expense.total_price|floatformat:2 }}</strong></td>
-                    <td><small class="text-muted">{{ expense.notes|truncatechars:30 }}</small></td>
                     <td>
-                        <button class="btn btn-action btn-outline-primary" data-bs-toggle="tooltip" title="View Details" onclick="viewExpense({{ expense.id }})">
-                            <i class="bi bi-eye"></i>
-                        </button>
-                        <a href="{% url 'expense_delete' expense.id %}" class="btn btn-action btn-outline-danger" data-bs-toggle="tooltip" title="Delete" onclick="return confirm('Are you sure you want to delete this expense?')">
-                            <i class="bi bi-trash"></i>
-                        </a>
+                        <div class="d-flex gap-1">
+                            <button class="btn btn-action btn-action-view" data-bs-toggle="tooltip" title="View Details" onclick="viewExpense({{ expense.id }})">
+                                <i class="bi bi-eye"></i>
+                            </button>
+                            <button class="btn btn-action btn-action-delete" data-bs-toggle="tooltip" title="Delete" onclick="confirmDelete({{ expense.id }})">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </div>
                     </td>
                 </tr>
                 {% empty %}
                 <tr>
-                    <td colspan="9" class="text-center text-muted py-5">
+                    <td colspan="8" class="text-center text-muted py-5">
                         <i class="bi bi-inbox fs-1 d-block mb-3"></i>
                         No expenses found. Start by adding your first expense!
                     </td>
@@ -111,22 +117,20 @@
 </div>
 
 <!-- Add Expense Modal -->
-<div class="modal fade" id="addExpenseModal" tabindex="-1" aria-labelledby="addExpenseModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
+<div class="modal fade modal-glass" id="addExpenseModal" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="addExpenseModalLabel">
-                    <i class="bi bi-plus-circle me-2"></i>Add New Expense
-                </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                <h5 class="modal-title"><i class="bi bi-plus-circle me-2"></i>Add New Expense</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <form method="post" action="{% url 'expense_add' %}">
                 {% csrf_token %}
                 <div class="modal-body">
                     <div class="row g-3">
                         <div class="col-md-6">
-                            <label class="form-label">Product <span class="text-danger">*</span></label>
-                            <select name="product" class="form-select select2" required data-placeholder="Select product">
+                            <label class="form-label small fw-semibold">Product <span class="text-danger">*</span></label>
+                            <select name="product" class="form-select select2-modal" style="width: 100%;" required>
                                 <option value="">Choose a product...</option>
                                 {% for product in products %}
                                 <option value="{{ product.id }}">{{ product.name }} ({{ product.category.name }})</option>
@@ -134,8 +138,8 @@
                             </select>
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label">Shop <span class="text-danger">*</span></label>
-                            <select name="shop" class="form-select select2" required data-placeholder="Select shop">
+                            <label class="form-label small fw-semibold">Shop <span class="text-danger">*</span></label>
+                            <select name="shop" class="form-select select2-modal" style="width: 100%;" required>
                                 <option value="">Choose a shop...</option>
                                 {% for shop in shops %}
                                 <option value="{{ shop.id }}">{{ shop.name }}</option>
@@ -143,32 +147,58 @@
                             </select>
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label">Quantity <span class="text-danger">*</span></label>
-                            <input type="number" step="0.001" name="quantity" class="form-control" required placeholder="Enter quantity">
+                            <label class="form-label small fw-semibold">Quantity <span class="text-danger">*</span></label>
+                            <input type="number" step="0.001" name="quantity" id="quantityInput" class="form-control form-control-glass" required placeholder="Enter quantity">
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label">Price per Unit <span class="text-danger">*</span></label>
-                            <input type="number" step="0.01" name="price_per_unit" class="form-control" required placeholder="$0.00">
+                            <label class="form-label small fw-semibold">Price per Unit <span class="text-danger">*</span></label>
+                            <input type="number" step="0.01" name="price_per_unit" id="priceInput" class="form-control form-control-glass" required placeholder="$0.00">
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label">Purchase Date <span class="text-danger">*</span></label>
-                            <input type="date" name="purchase_date" class="form-control" required value="{% now 'Y-m-d' %}">
+                            <label class="form-label small fw-semibold">Purchase Date <span class="text-danger">*</span></label>
+                            <input type="date" name="purchase_date" class="form-control form-control-glass" required value="{% now 'Y-m-d' %}">
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label">Total Price</label>
-                            <input type="text" id="totalPriceDisplay" class="form-control" readonly placeholder="$0.00">
+                            <label class="form-label small fw-semibold">Total Price</label>
+                            <input type="text" id="totalPriceDisplay" class="form-control form-control-glass" readonly placeholder="$0.00">
                         </div>
                         <div class="col-12">
-                            <label class="form-label">Notes</label>
-                            <textarea name="notes" class="form-control" rows="3" placeholder="Add any notes about this purchase..."></textarea>
+                            <label class="form-label small fw-semibold">Notes</label>
+                            <textarea name="notes" class="form-control form-control-glass" rows="3" placeholder="Add any notes..."></textarea>
                         </div>
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-glass" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-primary-glass text-white">
-                        <i class="bi bi-check-lg me-2"></i>Save Expense
-                    </button>
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-gradient"><i class="bi bi-check-lg me-2"></i>Save Expense</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Import CSV Modal -->
+<div class="modal fade modal-glass" id="importCsvModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-upload me-2"></i>Import Expenses from CSV</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="post" action="{% url 'import_csv' %}" enctype="multipart/form-data">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="alert alert-info mb-3">
+                        <i class="bi bi-info-circle me-2"></i>CSV columns: product_name, shop_name, quantity, price_per_unit, purchase_date, notes (optional)
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold">Select CSV File</label>
+                        <input type="file" name="csv_file" class="form-control form-control-glass" accept=".csv" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-gradient btn-gradient-success"><i class="bi bi-upload me-2"></i>Import</button>
                 </div>
             </form>
         </div>
@@ -176,18 +206,16 @@
 </div>
 
 <!-- View Expense Modal -->
-<div class="modal fade" id="viewExpenseModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog">
+<div class="modal fade modal-glass" id="viewExpenseModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title"><i class="bi bi-receipt me-2"></i>Expense Details</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <div class="modal-body" id="expenseDetailsContent">
-                <!-- Content loaded dynamically -->
-            </div>
+            <div class="modal-body" id="expenseDetailsContent"></div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-glass" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
             </div>
         </div>
     </div>
@@ -196,69 +224,51 @@
 
 {% block extra_js %}
 <script>
-// Initialize DataTable
 $(document).ready(function() {
-    const table = $('#expensesTable').DataTable({
-        responsive: true,
-        pageLength: 10,
-        lengthMenu: [10, 25, 50, 100],
+    $('#expensesTable').DataTable({
+        responsive: true, pageLength: 10, lengthMenu: [10, 25, 50, 100],
         dom: '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>>rtip',
         order: [[0, 'desc']],
-        language: {
-            search: "Search:",
-            lengthMenu: "Show _MENU_ entries",
-            info: "Showing _START_ to _END_ of _TOTAL_ entries",
-            infoEmpty: "No entries available",
-            infoFiltered: "(filtered from _MAX_ total entries)"
+        language: { search: "Search:", lengthMenu: "Show _MENU_ entries", info: "Showing _START_ to _END_ of _TOTAL_ entries" },
+        initComplete: function() { $('#totalRecords').text(this.api().data().length + ' records'); }
+    });
+
+    $('.select2-filter').select2({ theme: 'bootstrap-5', allowClear: true });
+    
+    $('.select2-modal').each(function() {
+        $(this).select2({ theme: 'bootstrap-5', dropdownParent: $(this).closest('.modal'), allowClear: true });
+    });
+
+    $('#quantityInput, #priceInput').on('input', function() {
+        const qty = parseFloat($('#quantityInput').val()) || 0;
+        const price = parseFloat($('#priceInput').val()) || 0;
+        $('#totalPriceDisplay').val('$' + (qty * price).toFixed(2));
+    });
+
+    $('[data-bs-toggle="tooltip"]').tooltip();
+});
+
+function viewExpense(id) {
+    $.ajax({
+        url: '/api/expense/' + id + '/',
+        success: function(data) {
+            $('#expenseDetailsContent').html('<div class="row g-3">' +
+                '<div class="col-6"><strong>Date:</strong></div><div class="col-6">' + data.purchase_date + '</div>' +
+                '<div class="col-6"><strong>Product:</strong></div><div class="col-6">' + data.product + '</div>' +
+                '<div class="col-6"><strong>Category:</strong></div><div class="col-6">' + data.category + '</div>' +
+                '<div class="col-6"><strong>Shop:</strong></div><div class="col-6">' + data.shop + '</div>' +
+                '<div class="col-6"><strong>Quantity:</strong></div><div class="col-6">' + data.quantity + ' ' + data.unit + '</div>' +
+                '<div class="col-6"><strong>Price/Unit:</strong></div><div class="col-6">$' + data.price_per_unit + '</div>' +
+                '<div class="col-6"><strong>Total:</strong></div><div class="col-6"><strong class="text-primary">$' + data.total_price + '</strong></div>' +
+                (data.notes ? '<div class="col-12"><strong>Notes:</strong><br>' + data.notes + '</div>' : '') +
+                '</div>');
+            new bootstrap.Modal(document.getElementById('viewExpenseModal')).show();
         },
-        initComplete: function() {
-            // Update record count
-            $('#totalRecords').text(this.api().data().length + ' records');
+        error: function() {
+            $('#expenseDetailsContent').html('<p class="text-danger">Error loading details.</p>');
+            new bootstrap.Modal(document.getElementById('viewExpenseModal')).show();
         }
     });
-
-    // Initialize Select2
-    $('.select2').each(function() {
-        $(this).select2({
-            theme: 'bootstrap-5',
-            dropdownParent: $(this).closest('.modal') || $(document.body),
-            placeholder: $(this).data('placeholder') || 'Select an option',
-            allowClear: true
-        });
-    });
-
-    // Calculate total price when quantity or price changes
-    $('input[name="quantity"], input[name="price_per_unit"]').on('input', function() {
-        const quantity = parseFloat($('input[name="quantity"]').val()) || 0;
-        const pricePerUnit = parseFloat($('input[name="price_per_unit"]').val()) || 0;
-        const total = quantity * pricePerUnit;
-        $('#totalPriceDisplay').val('$' + total.toFixed(2));
-    });
-});
-
-// View expense details
-function viewExpense(expenseId) {
-    // In a real implementation, you would fetch the details via AJAX
-    // For now, we'll just show a placeholder
-    document.getElementById('expenseDetailsContent').innerHTML = `
-        <div class="text-center py-4">
-            <p class="text-muted">Loading expense details...</p>
-        </div>
-    `;
-    
-    const modal = new bootstrap.Modal(document.getElementById('viewExpenseModal'));
-    modal.show();
 }
-
-// Auto-hide alerts
-document.addEventListener('DOMContentLoaded', function() {
-    const alerts = document.querySelectorAll('.alert:not(.alert-permanent)');
-    alerts.forEach(function(alert) {
-        setTimeout(function() {
-            const bsAlert = new bootstrap.Alert(alert);
-            bsAlert.close();
-        }, 5000);
-    });
-});
 </script>
 {% endblock %}

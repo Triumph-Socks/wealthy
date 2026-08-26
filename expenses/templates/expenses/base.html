@@ -2,175 +2,705 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=0.8">
     <title>{% block title %}Expense Tracker{% endblock %}</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css" />
+    <link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.1/css/buttons.bootstrap5.min.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
-            --primary-color: #4e73df;
-            --secondary-color: #858796;
-            --success-color: #1cc88a;
-            --info-color: #36b9cc;
-            --warning-color: #f6c23e;
-            --danger-color: #e74a3b;
-            --dark-color: #5a5c69;
+            --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --secondary-gradient: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            --success-gradient: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            --warning-gradient: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+            --glass-bg: rgba(255, 255, 255, 0.85);
+            --glass-border: rgba(255, 255, 255, 0.3);
+            --glass-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
+            --sidebar-width: 260px;
+            --sidebar-collapsed-width: 70px;
+        }
+        
+        * {
+            font-family: 'Inter', sans-serif;
         }
         
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #f8f9fc;
-        }
-        
-        .sidebar {
+            background: linear-gradient(-45deg, #ee7752, #e73c7e, #23a6d5, #23d5ab);
+            background-size: 400% 400%;
+            animation: gradientBG 15s ease infinite;
+            font-size: 0.875rem;
             min-height: 100vh;
-            background: linear-gradient(180deg, var(--primary-color) 10%, #224abe 100%);
-            box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
         }
         
-        .sidebar .nav-link {
-            color: rgba(255, 255, 255, 0.8);
-            padding: 1rem 1.5rem;
-            transition: all 0.3s;
+        @keyframes gradientBG {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
         }
         
-        .sidebar .nav-link:hover,
-        .sidebar .nav-link.active {
-            color: white;
-            background-color: rgba(255, 255, 255, 0.1);
+        /* Sidebar Styles */
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 100vh;
+            width: var(--sidebar-width);
+            background: var(--glass-bg);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border-right: 1px solid var(--glass-border);
+            box-shadow: var(--glass-shadow);
+            transition: all 0.3s ease;
+            z-index: 1000;
+            overflow-y: auto;
+            overflow-x: hidden;
         }
         
-        .sidebar .nav-link i {
-            margin-right: 0.5rem;
+        .sidebar.collapsed {
+            width: var(--sidebar-collapsed-width);
+        }
+        
+        .sidebar.collapsed .sidebar-brand span,
+        .sidebar.collapsed .nav-link span,
+        .sidebar.collapsed .sidebar-footer {
+            display: none;
+        }
+        
+        .sidebar.collapsed .nav-link {
+            text-align: center;
+            padding: 1rem 0.5rem;
+        }
+        
+        .sidebar.collapsed .nav-link i {
+            margin-right: 0;
+            font-size: 1.2rem;
+        }
+        
+        .sidebar-header {
+            padding: 1.5rem 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.1);
         }
         
         .sidebar-brand {
-            padding: 1.5rem 1rem;
-            text-align: center;
-            color: white;
-            font-size: 1.2rem;
-            font-weight: bold;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-size: 1.1rem;
+            font-weight: 700;
+            background: var(--primary-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
         }
         
-        .main-content {
-            padding: 2rem;
-        }
-        
-        .card {
+        .sidebar-toggle {
+            background: var(--primary-gradient);
             border: none;
-            box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
-            border-radius: 0.5rem;
+            color: white;
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: transform 0.3s ease;
         }
         
-        .card-header {
-            background-color: white;
-            border-bottom: 1px solid #e3e6f0;
-            font-weight: bold;
-            color: var(--primary-color);
+        .sidebar-toggle:hover {
+            transform: scale(1.1);
         }
         
+        .sidebar .nav-link {
+            color: #4a5568;
+            padding: 0.875rem 1.25rem;
+            margin: 0.25rem 0.5rem;
+            border-radius: 10px;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-weight: 500;
+        }
+        
+        .sidebar .nav-link:hover {
+            background: var(--primary-gradient);
+            color: white;
+            transform: translateX(5px);
+        }
+        
+        .sidebar .nav-link.active {
+            background: var(--primary-gradient);
+            color: white;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+        
+        .sidebar .nav-link i {
+            font-size: 1.1rem;
+            min-width: 20px;
+        }
+        
+        .sidebar-footer {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            padding: 1rem;
+            border-top: 1px solid rgba(0, 0, 0, 0.1);
+        }
+        
+        /* Main Content */
+        .main-content {
+            margin-left: var(--sidebar-width);
+            padding: 1.5rem;
+            transition: all 0.3s ease;
+            min-height: 100vh;
+        }
+        
+        .main-content.expanded {
+            margin-left: var(--sidebar-collapsed-width);
+        }
+        
+        /* Glass Cards */
+        .glass-card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            box-shadow: var(--glass-shadow);
+            padding: 1.5rem;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        
+        .glass-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 40px 0 rgba(31, 38, 135, 0.2);
+        }
+        
+        .card-header-glass {
+            background: rgba(255, 255, 255, 0.5);
+            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+            border-radius: 16px 16px 0 0;
+            padding: 1rem 1.5rem;
+            font-weight: 600;
+            color: #4a5568;
+        }
+        
+        /* Stat Cards */
         .stat-card {
-            border-left: 4px solid;
+            background: var(--glass-bg);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 1.5rem;
+            border: 1px solid var(--glass-border);
+            box-shadow: var(--glass-shadow);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
         }
         
-        .stat-card.primary { border-left-color: var(--primary-color); }
-        .stat-card.success { border-left-color: var(--success-color); }
-        .stat-card.info { border-left-color: var(--info-color); }
-        .stat-card.warning { border-left-color: var(--warning-color); }
-        
-        .stat-card .stat-label {
-            color: var(--primary-color);
-            font-size: 0.8rem;
-            font-weight: bold;
-            text-transform: uppercase;
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: var(--gradient);
         }
         
-        .stat-card .stat-value {
-            color: var(--dark-color);
+        .stat-card.primary { --gradient: var(--primary-gradient); }
+        .stat-card.success { --gradient: var(--success-gradient); }
+        .stat-card.warning { --gradient: var(--warning-gradient); }
+        .stat-card.danger { --gradient: var(--secondary-gradient); }
+        
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 40px 0 rgba(31, 38, 135, 0.2);
+        }
+        
+        .stat-icon {
+            width: 50px;
+            height: 50px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             font-size: 1.5rem;
-            font-weight: bold;
+            background: var(--gradient);
+            color: white;
         }
         
-        .table-responsive {
-            background: white;
-            border-radius: 0.5rem;
+        .stat-label {
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #718096;
         }
         
-        .btn-primary {
-            background-color: var(--primary-color);
-            border-color: var(--primary-color);
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #2d3748;
         }
         
-        .progress {
-            height: 1.5rem;
-            border-radius: 1rem;
+        /* Buttons */
+        .btn-gradient {
+            background: var(--primary-gradient);
+            border: none;
+            color: white;
+            padding: 0.625rem 1.25rem;
+            border-radius: 10px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
         }
         
+        .btn-gradient:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+            color: white;
+        }
+        
+        .btn-gradient-success {
+            background: var(--success-gradient);
+            box-shadow: 0 4px 15px rgba(79, 172, 254, 0.3);
+        }
+        
+        .btn-gradient-warning {
+            background: var(--warning-gradient);
+            box-shadow: 0 4px 15px rgba(250, 112, 154, 0.3);
+        }
+        
+        .btn-gradient-danger {
+            background: var(--secondary-gradient);
+            box-shadow: 0 4px 15px rgba(240, 147, 251, 0.3);
+        }
+        
+        /* Tables */
+        .table-glass {
+            background: var(--glass-bg);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: var(--glass-shadow);
+        }
+        
+        .table-glass thead th {
+            background: rgba(102, 126, 234, 0.1);
+            border: none;
+            padding: 1rem;
+            font-weight: 600;
+            color: #4a5568;
+            text-transform: uppercase;
+            font-size: 0.7rem;
+            letter-spacing: 0.5px;
+        }
+        
+        .table-glass tbody td {
+            padding: 1rem;
+            border-color: rgba(0, 0, 0, 0.05);
+            vertical-align: middle;
+        }
+        
+        .table-glass tbody tr:hover {
+            background: rgba(102, 126, 234, 0.05);
+        }
+        
+        /* Alerts */
+        .alert-glass {
+            background: var(--glass-bg);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            box-shadow: var(--glass-shadow);
+            animation: slideIn 0.5s ease;
+        }
+        
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+        
+        /* Modals */
+        .modal-glass .modal-content {
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            box-shadow: var(--glass-shadow);
+        }
+        
+        .modal-glass .modal-header {
+            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+            border-radius: 20px 20px 0 0;
+            padding: 1.25rem 1.5rem;
+        }
+        
+        .modal-glass .modal-body {
+            padding: 1.5rem;
+        }
+        
+        .modal-glass .modal-footer {
+            border-top: 1px solid rgba(0, 0, 0, 0.05);
+            padding: 1rem 1.5rem;
+        }
+        
+        /* Forms */
+        .form-control-glass {
+            background: rgba(255, 255, 255, 0.5);
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            border-radius: 10px;
+            padding: 0.625rem 1rem;
+            transition: all 0.3s ease;
+        }
+        
+        .form-control-glass:focus {
+            background: rgba(255, 255, 255, 0.8);
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        
+        /* Select2 Customization */
+        .select2-container--bootstrap-5 .select2-selection {
+            border-radius: 10px;
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            background: rgba(255, 255, 255, 0.5);
+        }
+        
+        .select2-container--bootstrap-5 .select2-selection--single {
+            padding: 0.625rem 1rem;
+            height: auto;
+        }
+        
+        .select2-container--bootstrap-5 .select2-selection--single .select2-selection__rendered {
+            padding-left: 0;
+        }
+        
+        /* Progress Bars */
+        .progress-glass {
+            background: rgba(0, 0, 0, 0.05);
+            border-radius: 10px;
+            height: 12px;
+            overflow: hidden;
+        }
+        
+        .progress-glass .progress-bar {
+            background: var(--primary-gradient);
+            border-radius: 10px;
+            transition: width 0.6s ease;
+        }
+        
+        /* Badges */
+        .badge-glass {
+            padding: 0.375rem 0.75rem;
+            border-radius: 8px;
+            font-weight: 500;
+            font-size: 0.75rem;
+        }
+        
+        .badge-glass-primary {
+            background: rgba(102, 126, 234, 0.15);
+            color: #667eea;
+        }
+        
+        .badge-glass-success {
+            background: rgba(79, 172, 254, 0.15);
+            color: #4facfe;
+        }
+        
+        .badge-glass-warning {
+            background: rgba(250, 112, 154, 0.15);
+            color: #fa709a;
+        }
+        
+        .badge-glass-danger {
+            background: rgba(240, 147, 251, 0.15);
+            color: #f093fb;
+        }
+        
+        /* Page Header */
+        .page-header {
+            margin-bottom: 1.5rem;
+        }
+        
+        .page-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #2d3748;
+            margin-bottom: 0.25rem;
+        }
+        
+        .page-subtitle {
+            color: #718096;
+            font-size: 0.875rem;
+        }
+        
+        /* Filter Section */
+        .filter-section {
+            background: var(--glass-bg);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 1.25rem;
+            margin-bottom: 1.5rem;
+            border: 1px solid var(--glass-border);
+            box-shadow: var(--glass-shadow);
+        }
+        
+        /* Chart Container */
         .chart-container {
             position: relative;
             height: 300px;
+        }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+            }
+            
+            .sidebar.show {
+                transform: translateX(0);
+            }
+            
+            .main-content {
+                margin-left: 0;
+            }
+            
+            .main-content.expanded {
+                margin-left: 0;
+            }
+        }
+        
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.05);
+            border-radius: 4px;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: rgba(102, 126, 234, 0.3);
+            border-radius: 4px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(102, 126, 234, 0.5);
+        }
+        
+        /* Action Buttons */
+        .btn-action {
+            width: 32px;
+            height: 32px;
+            padding: 0;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-action:hover {
+            transform: scale(1.1);
+        }
+        
+        .btn-action-view {
+            background: rgba(79, 172, 254, 0.15);
+            color: #4facfe;
+        }
+        
+        .btn-action-delete {
+            background: rgba(240, 147, 251, 0.15);
+            color: #f093fb;
         }
     </style>
     {% block extra_css %}{% endblock %}
 </head>
 <body>
-    <div class="container-fluid">
-        <div class="row">
-            <!-- Sidebar -->
-            <nav class="col-md-2 d-none d-md-block sidebar">
-                <div class="sidebar-brand">
-                    <i class="bi bi-wallet2"></i> Expense Tracker
-                </div>
-                <ul class="nav flex-column mt-3">
-                    <li class="nav-item">
-                        <a class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}" href="{% url 'dashboard' %}">
-                            <i class="bi bi-speedometer2"></i> Dashboard
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link {% if request.resolver_match.url_name == 'expense_list' %}active{% endif %}" href="{% url 'expense_list' %}">
-                            <i class="bi bi-receipt"></i> Expenses
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link {% if request.resolver_match.url_name == 'add_expense' %}active{% endif %}" href="{% url 'add_expense' %}">
-                            <i class="bi bi-plus-circle"></i> Add Expense
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link {% if request.resolver_match.url_name == 'price_analysis' %}active{% endif %}" href="{% url 'price_analysis' %}">
-                            <i class="bi bi-graph-up"></i> Price Analysis
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link {% if request.resolver_match.url_name == 'shop_comparison' %}active{% endif %}" href="{% url 'shop_comparison' %}">
-                            <i class="bi bi-shop"></i> Shop Comparison
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link {% if request.resolver_match.url_name == 'category_report' %}active{% endif %}" href="{% url 'category_report' %}">
-                            <i class="bi bi-pie-chart"></i> Category Report
-                        </a>
-                    </li>
-                    <li class="nav-item mt-4">
-                        <a class="nav-link" href="/admin/">
-                            <i class="bi bi-gear"></i> Admin Panel
-                        </a>
-                    </li>
-                </ul>
-            </nav>
+    <!-- Sidebar -->
+    <nav class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <div class="sidebar-brand">
+                <i class="bi bi-wallet2"></i>
+                <span>Expense Tracker</span>
+            </div>
+            <button class="sidebar-toggle" id="sidebarToggle" title="Toggle Sidebar">
+                <i class="bi bi-chevron-left"></i>
+            </button>
+        </div>
+        
+        <ul class="nav flex-column mt-3">
+            <li class="nav-item">
+                <a class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}" href="{% url 'dashboard' %}">
+                    <i class="bi bi-speedometer2"></i>
+                    <span>Dashboard</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {% if request.resolver_match.url_name == 'expense_list' %}active{% endif %}" href="{% url 'expense_list' %}">
+                    <i class="bi bi-receipt"></i>
+                    <span>Expenses</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {% if request.resolver_match.url_name == 'expense_add' %}active{% endif %}" href="{% url 'expense_add' %}">
+                    <i class="bi bi-plus-circle"></i>
+                    <span>Add Expense</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {% if request.resolver_match.url_name == 'price_analysis' %}active{% endif %}" href="{% url 'price_analysis' %}">
+                    <i class="bi bi-graph-up"></i>
+                    <span>Price Analysis</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {% if request.resolver_match.url_name == 'shop_comparison' %}active{% endif %}" href="{% url 'shop_comparison' %}">
+                    <i class="bi bi-shop"></i>
+                    <span>Shop Comparison</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {% if request.resolver_match.url_name == 'category_report' %}active{% endif %}" href="{% url 'category_report' %}">
+                    <i class="bi bi-pie-chart"></i>
+                    <span>Category Report</span>
+                </a>
+            </li>
+        </ul>
+        
+        <div class="sidebar-footer">
+            <a class="nav-link" href="/admin/">
+                <i class="bi bi-gear"></i>
+                <span>Admin Panel</span>
+            </a>
+        </div>
+    </nav>
 
-            <!-- Main Content -->
-            <main class="col-md-10 ms-sm-auto main-content">
-                {% block content %}{% endblock %}
-            </main>
+    <!-- Main Content -->
+    <main class="main-content" id="mainContent">
+        <!-- Messages -->
+        {% if messages %}
+        <div class="position-fixed top-0 end-0 p-3" style="z-index: 1100;">
+            {% for message in messages %}
+            <div class="alert alert-{{ message.tags|default:'info' }} alert-glass alert-dismissible fade show mb-2" role="alert">
+                <i class="bi bi-{% if message.tags == 'success' %}check-circle{% elif message.tags == 'error' %}exclamation-triangle{% elif message.tags == 'warning' %}exclamation-circle{% else %}info-circle{% endif %} me-2"></i>
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+        
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Delete Confirmation Modal -->
+    <div class="modal fade modal-glass" id="deleteModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="bi bi-exclamation-triangle text-danger me-2"></i>Confirm Delete</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Are you sure you want to delete this expense? This action cannot be undone.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <form id="deleteForm" method="POST" style="display: inline;">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-gradient btn-gradient-danger">Delete</button>
+                    </form>
+                </div>
+            </div>
         </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.4.1/js/dataTables.buttons.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.bootstrap5.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/pdfmake.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/vfs_fonts.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.html5.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.print.min.js"></script>
+    
+    <script>
+        // Sidebar Toggle
+        document.getElementById('sidebarToggle').addEventListener('click', function() {
+            const sidebar = document.getElementById('sidebar');
+            const mainContent = document.getElementById('mainContent');
+            const icon = this.querySelector('i');
+            
+            sidebar.classList.toggle('collapsed');
+            mainContent.classList.toggle('expanded');
+            
+            if (sidebar.classList.contains('collapsed')) {
+                icon.classList.remove('bi-chevron-left');
+                icon.classList.add('bi-chevron-right');
+            } else {
+                icon.classList.remove('bi-chevron-right');
+                icon.classList.add('bi-chevron-left');
+            }
+            
+            localStorage.setItem('sidebarCollapsed', sidebar.classList.contains('collapsed'));
+        });
+        
+        // Restore sidebar state
+        if (localStorage.getItem('sidebarCollapsed') === 'true') {
+            document.getElementById('sidebar').classList.add('collapsed');
+            document.getElementById('mainContent').classList.add('expanded');
+            document.querySelector('.sidebar-toggle i').classList.remove('bi-chevron-left');
+            document.querySelector('.sidebar-toggle i').classList.add('bi-chevron-right');
+        }
+        
+        // Mobile sidebar toggle
+        function toggleMobileSidebar() {
+            document.getElementById('sidebar').classList.toggle('show');
+        }
+        
+        // Initialize DataTables
+        $(document).ready(function() {
+            // Auto-hide alerts after 5 seconds
+            setTimeout(function() {
+                $('.alert').fadeOut('slow', function() {
+                    $(this).alert('close');
+                });
+            }, 5000);
+        });
+        
+        // Delete confirmation
+        function confirmDelete(expenseId) {
+            const form = document.getElementById('deleteForm');
+            form.action = '/expenses/' + expenseId + '/delete/';
+            const modal = new bootstrap.Modal(document.getElementById('deleteModal'));
+            modal.show();
+        }
+    </script>
     {% block extra_js %}{% endblock %}
 </body>
 </html>
