@@ -51,7 +51,8 @@ class ViewsTest(TestCase):
             'shop': self.shop.id,
             'quantity': 1,
             'price_per_unit': 5.99,
-            'purchase_date': '2024-01-15'
+            'purchase_date': '2024-01-15',
+            'notes': ''
         }
         response = self.client.post(reverse('expense_add'), data)
         self.assertEqual(response.status_code, 302)
