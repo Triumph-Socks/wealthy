@@ -1,0 +1,13 @@
+from django.contrib import admin
+from django.urls import path
+from expenses import views
+
+urlpatterns = [
+    path('admin/', admin.site.urls),
+    path('', views.dashboard, name='dashboard'),
+    path('expenses/', views.expense_list, name='expense_list'),
+    path('expenses/add/', views.add_expense, name='add_expense'),
+    path('price-analysis/', views.price_analysis, name='price_analysis'),
+    path('shop-comparison/', views.shop_comparison, name='shop_comparison'),
+    path('category-report/', views.category_report, name='category_report'),
+]
