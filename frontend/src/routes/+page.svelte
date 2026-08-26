@@ -14,8 +14,14 @@
   let spendingTrend = $state({ labels: [], data: [] });
   let categoryBreakdown = $state({ labels: [], data: [] });
   
+  let loading = $state(true);
+  let error = $state<string | null>(null);
+  
   onMount(async () => {
     try {
+      loading = true;
+      error = null;
+      
       const [statsData, trendData, categoryData] = await Promise.all([
         dashboardApi.getStats(),
         dashboardApi.getSpendingTrend(),
@@ -26,9 +32,15 @@
       spendingTrend = trendData;
       categoryBreakdown = categoryData;
       
-      renderCharts();
+      // Wait for DOM to render before initializing charts
+      setTimeout(() => {
+        renderCharts();
+      }, 0);
     } catch (err) {
       console.error('Error loading dashboard data:', err);
+      error = 'Failed to load dashboard data. Please try again later.';
+    } finally {
+      loading = false;
     }
   });
   
@@ -41,6 +53,11 @@
     
     const trendCtx = document.getElementById('trendChart') as HTMLCanvasElement;
     if (trendCtx && spendingTrend.data.length > 0) {
+      // Destroy existing chart if it exists
+      if (trendChart) {
+        trendChart.destroy();
+      }
+      
       trendChart = new Chart(trendCtx, {
         type: 'line',
         data: {
@@ -56,6 +73,7 @@
         },
         options: {
           responsive: true,
+          maintainAspectRatio: false,
           plugins: {
             legend: { display: false }
           },
@@ -68,6 +86,11 @@
     
     const categoryCtx = document.getElementById('categoryChart') as HTMLCanvasElement;
     if (categoryCtx && categoryBreakdown.data.length > 0) {
+      // Destroy existing chart if it exists
+      if (categoryChart) {
+        categoryChart.destroy();
+      }
+      
       categoryChart = new Chart(categoryCtx, {
         type: 'doughnut',
         data: {
@@ -81,6 +104,7 @@
         },
         options: {
           responsive: true,
+          maintainAspectRatio: false,
           plugins: {
             legend: { position: 'bottom' }
           }
@@ -96,42 +120,60 @@
     <p class="text-slate-600 mt-1">Track your expenses and budgets</p>
   </div>
   
-  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-    <StatCard 
-      title="Total Expenses" 
-      value={`$${stats.total_expenses.toFixed(2)}`}
-      icon={DollarSign}
-      color="blue"
-    />
-    <StatCard 
-      title="This Month" 
-      value={`$${stats.this_month.toFixed(2)}`}
-      icon={TrendingUp}
-      color="green"
-    />
-    <StatCard 
-      title="Avg Daily" 
-      value={`$${stats.avg_daily.toFixed(2)}`}
-      icon={ShoppingCart}
-      color="purple"
-    />
-    <StatCard 
-      title="Categories" 
-      value={stats.categories_count}
-      icon={AlertCircle}
-      color="orange"
-    />
-  </div>
-  
-  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-    <div class="bg-white rounded-lg p-6 shadow-sm border border-slate-200">
-      <h2 class="text-lg font-semibold text-slate-900 mb-4">Spending Trend</h2>
-      <canvas id="trendChart" height="200"></canvas>
+  {#if loading}
+    <div class="flex items-center justify-center py-12">
+      <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      <span class="ml-3 text-slate-600">Loading dashboard data...</span>
+    </div>
+  {:else if error}
+    <div class="bg-red-50 border border-red-200 rounded-lg p-4">
+      <div class="flex items-center gap-2 text-red-600">
+        <AlertCircle class="w-5 h-5" />
+        <p>{error}</p>
+      </div>
+    </div>
+  {:else}
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <StatCard 
+        title="Total Expenses" 
+        value={`$${stats.total_expenses.toFixed(2)}`}
+        icon={DollarSign}
+        color="blue"
+      />
+      <StatCard 
+        title="This Month" 
+        value={`$${stats.this_month.toFixed(2)}`}
+        icon={TrendingUp}
+        color="green"
+      />
+      <StatCard 
+        title="Avg Daily" 
+        value={`$${stats.avg_daily.toFixed(2)}`}
+        icon={ShoppingCart}
+        color="purple"
+      />
+      <StatCard 
+        title="Categories" 
+        value={stats.categories_count}
+        icon={AlertCircle}
+        color="orange"
+      />
     </div>
     
-    <div class="bg-white rounded-lg p-6 shadow-sm border border-slate-200">
-      <h2 class="text-lg font-semibold text-slate-900 mb-4">Category Breakdown</h2>
-      <canvas id="categoryChart" height="200"></canvas>
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div class="bg-white rounded-lg p-6 shadow-sm border border-slate-200">
+        <h2 class="text-lg font-semibold text-slate-900 mb-4">Spending Trend</h2>
+        <div class="h-[200px]">
+          <canvas id="trendChart"></canvas>
+        </div>
+      </div>
+      
+      <div class="bg-white rounded-lg p-6 shadow-sm border border-slate-200">
+        <h2 class="text-lg font-semibold text-slate-900 mb-4">Category Breakdown</h2>
+        <div class="h-[200px]">
+          <canvas id="categoryChart"></canvas>
+        </div>
+      </div>
     </div>
-  </div>
+  {/if}
 </div>

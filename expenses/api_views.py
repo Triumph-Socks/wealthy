@@ -2,6 +2,7 @@ from rest_framework import viewsets, status
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from django.db.models import Sum, Count, Avg, Q
+from django.db.models.functions import TruncDate
 from django.utils import timezone
 from datetime import timedelta, date
 import csv
@@ -31,7 +32,7 @@ class ExpenseViewSet(viewsets.ModelViewSet):
     serializer_class = ExpenseSerializer
     
     def get_queryset(self):
-        queryset = super().get_queryset()
+        queryset = Expense.objects.select_related('product', 'shop', 'product__category').all()
         category = self.request.query_params.get('category')
         shop = self.request.query_params.get('shop')
         start_date = self.request.query_params.get('start_date')
@@ -87,17 +88,26 @@ def spending_trend(request):
     end_date = timezone.now().date()
     start_date = end_date - timedelta(days=days-1)
     
+    # Use database aggregation for better performance
+    expenses = Expense.objects.filter(
+        purchase_date__gte=start_date,
+        purchase_date__lte=end_date
+    ).annotate(
+        date=TruncDate('purchase_date')
+    ).values('date').annotate(
+        total=Sum('total_price')
+    ).order_by('date')
+    
+    # Create a dictionary for quick lookup
+    expense_dict = {item['date']: float(item['total']) for item in expenses}
+    
     labels = []
     data = []
     
     current = start_date
     while current <= end_date:
-        expenses = Expense.objects.filter(
-            purchase_date=current
-        ).aggregate(Sum('total_price'))['total_price__sum'] or 0
-        
         labels.append(current.strftime('%b %d'))
-        data.append(float(expenses))
+        data.append(expense_dict.get(current, 0))
         current += timedelta(days=1)
     
     result = {'labels': labels, 'data': data}
@@ -106,11 +116,14 @@ def spending_trend(request):
 
 @api_view(['GET'])
 def category_breakdown(request):
-    breakdown = Expense.objects.values('product__category__name').annotate(
+    # Optimized query with select_related for better performance
+    breakdown = Expense.objects.select_related('product__category').values(
+        'product__category__name'
+    ).annotate(
         total=Sum('total_price')
     ).order_by('-total')
     
-    labels = [item['product__category__name'] for item in breakdown]
+    labels = [item['product__category__name'] or 'Uncategorized' for item in breakdown]
     data = [float(item['total']) for item in breakdown]
     
     result = {'labels': labels, 'data': data}
