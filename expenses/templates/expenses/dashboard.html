@@ -1,46 +1,68 @@
-{% extends 'expenses/base.html' %}
+{% extends 'base.html' %}
 
 {% block title %}Dashboard - Expense Tracker{% endblock %}
 
-{% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <h1 class="h3 mb-0 text-gray-800">Dashboard</h1>
-    <div>
-        <span class="text-muted">{{ current_month_name }} {{ current_year }}</span>
-    </div>
-</div>
+{% block page_title %}Dashboard{% endblock %}
+{% block page_subtitle %}Your financial overview for {{ current_month_name }} {{ current_year }}{% endblock %}
 
+{% block header_actions %}
+<a href="{% url 'expense_add' %}" class="btn btn-primary-glass text-white">
+    <i class="bi bi-plus-lg me-2"></i>Add Expense
+</a>
+{% endblock %}
+
+{% block content %}
 <!-- Stats Cards -->
 <div class="row mb-4">
     <div class="col-xl-3 col-md-6 mb-4">
-        <div class="card stat-card primary h-100">
-            <div class="card-body">
-                <div class="stat-label">Monthly Expenses</div>
-                <div class="stat-value">${{ monthly_expenses|floatformat:2 }}</div>
+        <div class="stat-card fade-in">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <div class="text-muted mb-1" style="font-size: 0.85rem; font-weight: 500;">Monthly Expenses</div>
+                    <div class="fs-3 fw-bold text-primary">${{ monthly_expenses|floatformat:2 }}</div>
+                </div>
+                <div class="stat-icon" style="background: var(--primary-gradient);">
+                    <i class="bi bi-calendar-check"></i>
+                </div>
             </div>
         </div>
     </div>
     <div class="col-xl-3 col-md-6 mb-4">
-        <div class="card stat-card success h-100">
-            <div class="card-body">
-                <div class="stat-label">Yearly Expenses</div>
-                <div class="stat-value">${{ yearly_expenses|floatformat:2 }}</div>
+        <div class="stat-card fade-in" style="animation-delay: 0.1s;">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <div class="text-muted mb-1" style="font-size: 0.85rem; font-weight: 500;">Yearly Expenses</div>
+                    <div class="fs-3 fw-bold text-success">${{ yearly_expenses|floatformat:2 }}</div>
+                </div>
+                <div class="stat-icon" style="background: var(--success-gradient);">
+                    <i class="bi bi-calendar3"></i>
+                </div>
             </div>
         </div>
     </div>
     <div class="col-xl-3 col-md-6 mb-4">
-        <div class="card stat-card info h-100">
-            <div class="card-body">
-                <div class="stat-label">Categories Tracked</div>
-                <div class="stat-value">{{ expenses_by_category|length }}</div>
+        <div class="stat-card fade-in" style="animation-delay: 0.2s;">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <div class="text-muted mb-1" style="font-size: 0.85rem; font-weight: 500;">Categories Tracked</div>
+                    <div class="fs-3 fw-bold text-info">{{ expenses_by_category|length }}</div>
+                </div>
+                <div class="stat-icon" style="background: linear-gradient(135deg, #00c6fb 0%, #005bea 100%);">
+                    <i class="bi bi-layers"></i>
+                </div>
             </div>
         </div>
     </div>
     <div class="col-xl-3 col-md-6 mb-4">
-        <div class="card stat-card warning h-100">
-            <div class="card-body">
-                <div class="stat-label">Shops Visited</div>
-                <div class="stat-value">{{ top_shops|length }}</div>
+        <div class="stat-card fade-in" style="animation-delay: 0.3s;">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <div class="text-muted mb-1" style="font-size: 0.85rem; font-weight: 500;">Shops Visited</div>
+                    <div class="fs-3 fw-bold text-warning">${{ top_shops|length }}</div>
+                </div>
+                <div class="stat-icon" style="background: var(--warning-gradient);">
+                    <i class="bi bi-shop"></i>
+                </div>
             </div>
         </div>
     </div>
@@ -49,26 +71,18 @@
 <!-- Charts Row -->
 <div class="row mb-4">
     <div class="col-lg-8 mb-4">
-        <div class="card">
-            <div class="card-header">
-                <i class="bi bi-graph-up"></i> Monthly Spending Trend
-            </div>
-            <div class="card-body">
-                <div class="chart-container">
-                    <canvas id="trendChart"></canvas>
-                </div>
+        <div class="glass-card p-4 h-100">
+            <h5 class="mb-4"><i class="bi bi-graph-up me-2"></i>Monthly Spending Trend</h5>
+            <div class="chart-container">
+                <canvas id="trendChart"></canvas>
             </div>
         </div>
     </div>
     <div class="col-lg-4 mb-4">
-        <div class="card">
-            <div class="card-header">
-                <i class="bi bi-pie-chart"></i> Expenses by Category
-            </div>
-            <div class="card-body">
-                <div class="chart-container">
-                    <canvas id="categoryChart"></canvas>
-                </div>
+        <div class="glass-card p-4 h-100">
+            <h5 class="mb-4"><i class="bi bi-pie-chart me-2"></i>Expenses by Category</h5>
+            <div class="chart-container">
+                <canvas id="categoryChart"></canvas>
             </div>
         </div>
     </div>
@@ -78,30 +92,30 @@
 {% if budget_data %}
 <div class="row mb-4">
     <div class="col-12">
-        <div class="card">
-            <div class="card-header">
-                <i class="bi bi-bar-chart"></i> Budget vs Actual (This Month)
-            </div>
-            <div class="card-body">
-                {% for item in budget_data %}
-                <div class="mb-3">
-                    <div class="d-flex justify-content-between mb-1">
-                        <span>{{ item.category.name }}</span>
-                        <span>${{ item.actual|floatformat:2 }} / ${{ item.budget|floatformat:2 }}</span>
-                    </div>
-                    <div class="progress">
-                        <div class="progress-bar {% if item.percentage > 100 %}bg-danger{% elif item.percentage > 80 %}bg-warning{% else %}bg-success{% endif %}" 
-                             role="progressbar" 
-                             style="width: {{ item.percentage|floatformat:0 }}%"
-                             aria-valuenow="{{ item.percentage|floatformat:0 }}" 
-                             aria-valuemin="0" 
-                             aria-valuemax="100">
+        <div class="glass-card p-4">
+            <h5 class="mb-4"><i class="bi bi-bar-chart me-2"></i>Budget vs Actual (This Month)</h5>
+            {% for item in budget_data %}
+            <div class="mb-3">
+                <div class="d-flex justify-content-between mb-2">
+                    <span class="fw-medium">{{ item.category.name }}</span>
+                    <span class="{% if item.percentage > 100 %}text-danger{% elif item.percentage > 80 %}text-warning{% else %}text-success{% endif %}">
+                        ${{ item.actual|floatformat:2 }} / ${{ item.budget|floatformat:2 }}
+                        <span class="badge {% if item.percentage > 100 %}bg-danger{% elif item.percentage > 80 %}bg-warning{% else %}bg-success{% endif %} ms-2">
                             {{ item.percentage|floatformat:0 }}%
-                        </div>
+                        </span>
+                    </span>
+                </div>
+                <div class="progress" style="height: 12px;">
+                    <div class="progress-bar {% if item.percentage > 100 %}bg-danger{% elif item.percentage > 80 %}bg-warning{% else %}bg-success{% endif %}" 
+                         role="progressbar" 
+                         style="width: {{ item.percentage|floatformat:0 }}%"
+                         aria-valuenow="{{ item.percentage|floatformat:0 }}" 
+                         aria-valuemin="0" 
+                         aria-valuemax="100">
                     </div>
                 </div>
-                {% endfor %}
             </div>
+            {% endfor %}
         </div>
     </div>
 </div>
@@ -110,57 +124,54 @@
 <!-- Recent Expenses & Top Shops -->
 <div class="row">
     <div class="col-lg-8">
-        <div class="card">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <span><i class="bi bi-receipt"></i> Recent Expenses</span>
-                <a href="{% url 'expense_list' %}" class="btn btn-sm btn-primary">View All</a>
+        <div class="glass-card p-4">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h5 class="mb-0"><i class="bi bi-receipt me-2"></i>Recent Expenses</h5>
+                <a href="{% url 'expense_list' %}" class="btn btn-sm btn-primary-glass text-white">View All</a>
             </div>
-            <div class="card-body">
-                <div class="table-responsive">
-                    <table class="table table-hover">
-                        <thead>
-                            <tr>
-                                <th>Date</th>
-                                <th>Product</th>
-                                <th>Shop</th>
-                                <th>Amount</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for expense in recent_expenses %}
-                            <tr>
-                                <td>{{ expense.purchase_date|date:"M d, Y" }}</td>
-                                <td>{{ expense.product.name }}</td>
-                                <td>{{ expense.shop.name }}</td>
-                                <td>${{ expense.total_price|floatformat:2 }}</td>
-                            </tr>
-                            {% empty %}
-                            <tr>
-                                <td colspan="4" class="text-center text-muted">No expenses recorded yet</td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
+            <div class="table-responsive">
+                <table class="table table-hover" id="recentExpensesTable">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Product</th>
+                            <th>Shop</th>
+                            <th>Amount</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for expense in recent_expenses %}
+                        <tr>
+                            <td>{{ expense.purchase_date|date:"M d, Y" }}</td>
+                            <td><span class="badge bg-light text-dark">{{ expense.product.name }}</span></td>
+                            <td>{{ expense.shop.name }}</td>
+                            <td class="fw-bold text-primary">${{ expense.total_price|floatformat:2 }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="4" class="text-center text-muted py-4">No expenses recorded yet. <a href="{% url 'expense_add' %}">Add your first expense</a></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
             </div>
         </div>
     </div>
     <div class="col-lg-4">
-        <div class="card">
-            <div class="card-header">
-                <i class="bi bi-shop"></i> Top Shops
-            </div>
-            <div class="card-body">
-                <ul class="list-group list-group-flush">
-                    {% for shop in top_shops %}
-                    <li class="list-group-item d-flex justify-content-between align-items-center">
-                        {{ shop.name }}
-                        <span class="badge bg-primary rounded-pill">${{ shop.total_spent|floatformat:2 }}</span>
-                    </li>
-                    {% empty %}
-                    <li class="list-group-item text-center text-muted">No shops visited yet</li>
-                    {% endfor %}
-                </ul>
+        <div class="glass-card p-4">
+            <h5 class="mb-4"><i class="bi bi-shop me-2"></i>Top Shops</h5>
+            <div class="list-group list-group-flush">
+                {% for shop in top_shops %}
+                <div class="list-group-item d-flex justify-content-between align-items-center px-0 border-0">
+                    <div>
+                        <i class="bi bi-geo-alt text-primary me-2"></i>
+                        <span class="fw-medium">{{ shop.name }}</span>
+                    </div>
+                    <span class="badge bg-primary rounded-pill">${{ shop.total_spent|floatformat:2 }}</span>
+                </div>
+                {% empty %}
+                <div class="text-center text-muted py-4">No shops visited yet</div>
+                {% endfor %}
             </div>
         </div>
     </div>
@@ -178,17 +189,46 @@ new Chart(trendCtx, {
         datasets: [{
             label: 'Expenses',
             data: [{% for item in monthly_trend %}{{ item.total|floatformat:2 }}{% if not forloop.last %}, {% endif %}{% endfor %}],
-            borderColor: '#4e73df',
-            backgroundColor: 'rgba(78, 115, 223, 0.1)',
+            borderColor: '#667eea',
+            backgroundColor: 'rgba(102, 126, 234, 0.1)',
             tension: 0.4,
-            fill: true
+            fill: true,
+            pointBackgroundColor: '#667eea',
+            pointBorderColor: '#fff',
+            pointBorderWidth: 2,
+            pointRadius: 5,
+            pointHoverRadius: 7
         }]
     },
     options: {
         responsive: true,
         maintainAspectRatio: false,
         plugins: {
-            legend: { display: false }
+            legend: { display: false },
+            tooltip: {
+                backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                padding: 12,
+                cornerRadius: 8,
+                callbacks: {
+                    label: function(context) {
+                        return '$' + context.parsed.y.toFixed(2);
+                    }
+                }
+            }
+        },
+        scales: {
+            y: {
+                beginAtZero: true,
+                grid: { color: 'rgba(0, 0, 0, 0.05)' },
+                ticks: {
+                    callback: function(value) {
+                        return '$' + value;
+                    }
+                }
+            },
+            x: {
+                grid: { display: false }
+            }
         }
     }
 });
@@ -202,13 +242,36 @@ new Chart(categoryCtx, {
         datasets: [{
             data: [{% for cat in expenses_by_category %}{{ cat.total_spent|default:0|floatformat:2 }}{% if not forloop.last %}, {% endif %}{% endfor %}],
             backgroundColor: [
-                '#4e73df', '#1cc88a', '#36b9cc', '#f6c23e', '#e74a3b'
-            ]
+                '#667eea', '#00f2fe', '#fa709a', '#fee140', '#f5576c'
+            ],
+            borderWidth: 0,
+            hoverOffset: 10
         }]
     },
     options: {
         responsive: true,
-        maintainAspectRatio: false
+        maintainAspectRatio: false,
+        cutout: '65%',
+        plugins: {
+            legend: {
+                position: 'bottom',
+                labels: {
+                    padding: 15,
+                    usePointStyle: true,
+                    pointStyle: 'circle'
+                }
+            },
+            tooltip: {
+                backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                padding: 12,
+                cornerRadius: 8,
+                callbacks: {
+                    label: function(context) {
+                        return '$' + context.parsed + ' (' + ((context.picked / context.chart._metasets[context.datasetIndex].total) * 100).toFixed(1) + '%)';
+                    }
+                }
+            }
+        }
     }
 });
 </script>
