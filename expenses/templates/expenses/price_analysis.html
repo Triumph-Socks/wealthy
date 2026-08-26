@@ -1,0 +1,123 @@
+{% extends 'expenses/base.html' %}
+
+{% block title %}Price Analysis - Expense Tracker{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="h3 mb-0 text-gray-800">Price Analysis & Inflation Tracking</h1>
+</div>
+
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3 align-items-end">
+            <div class="col-md-6">
+                <label for="product" class="form-label">Select Product to Analyze</label>
+                <select name="product" id="product" class="form-select">
+                    <option value="">-- Select a Product --</option>
+                    {% for product in products %}
+                    <option value="{{ product.id }}" {% if selected_product.id == product.id %}selected{% endif %}>
+                        {{ product.name }} ({{ product.category.name }})
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="bi bi-search"></i> Analyze
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% if selected_product and price_data %}
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <i class="bi bi-graph-up"></i> Price Trend for {{ selected_product.name }}
+            </div>
+            <div class="card-body">
+                <div class="chart-container" style="height: 400px;">
+                    <canvas id="priceChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    {% for shop_name, prices in price_data.items %}
+    <div class="col-md-6 col-lg-4 mb-4">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                {{ shop_name }}
+            </div>
+            <div class="card-body">
+                <h5 class="card-title">Price History</h5>
+                <ul class="list-group list-group-flush">
+                    {% for record in prices|slice:":10" %}
+                    <li class="list-group-item d-flex justify-content-between">
+                        <span>{{ record.date|date:"M d, Y" }}</span>
+                        <strong>${{ record.price|floatformat:2 }}</strong>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% elif selected_product %}
+<div class="alert alert-info">
+    <i class="bi bi-info-circle"></i> No price history available for this product. Start recording expenses to track prices.
+</div>
+{% else %}
+<div class="alert alert-info">
+    <i class="bi bi-info-circle"></i> Select a product above to view its price history and inflation analysis.
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+{% if price_data %}
+<script>
+const ctx = document.getElementById('priceChart').getContext('2d');
+new Chart(ctx, {
+    type: 'line',
+    data: {
+        labels: [{% for record in price_data.values|first|slice:":10" %}'{{ record.date|date:"M d" }}'{% if not forloop.last %}, {% endif %}{% endfor %}],
+        datasets: [
+            {% for shop_name, prices in price_data.items %}
+            {
+                label: '{{ shop_name }}',
+                data: [{% for record in prices|slice:":10" %}{{ record.price }}{% if not forloop.last %}, {% endif %}{% endfor %}],
+                borderColor: '{% cycle "#4e73df" "#1cc88a" "#36b9cc" "#f6c23e" "#e74a3b" %}',
+                tension: 0.4
+            },
+            {% endfor %}
+        ]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            title: {
+                display: true,
+                text: 'Price Comparison Across Shops'
+            }
+        },
+        scales: {
+            y: {
+                beginAtZero: false,
+                title: {
+                    display: true,
+                    text: 'Price ($)'
+                }
+            }
+        }
+    }
+});
+</script>
+{% endif %}
+{% endblock %}
