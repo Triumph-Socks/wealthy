@@ -413,15 +413,22 @@
     {% block extra_css %}{% endblock %}
 </head>
 <body>
+    <!-- 80% Scale Wrapper -->
+    <div id="app-wrapper" style="transform: scale(0.8); transform-origin: top left; width: 100%; min-height: 100vh;">
     <div class="container-fluid">
         <div class="row">
-            <!-- Sidebar -->
-            <nav class="col-md-3 col-lg-2 d-md-block sidebar collapse show p-3">
+            <!-- Sidebar with toggle -->
+            <nav id="sidebar" class="col-md-3 col-lg-2 d-md-block sidebar collapse show p-3" style="transition: all 0.3s ease;">
                 <div class="position-sticky">
-                    <a class="d-flex align-items-center mb-4 text-decoration-none" href="{% url 'dashboard' %}">
-                        <i class="bi bi-wallet2 fs-2 text-white me-2"></i>
-                        <span class="fs-4 fw-bold text-white">ExpenseTracker</span>
-                    </a>
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <a class="d-flex align-items-center text-decoration-none" href="{% url 'dashboard' %}">
+                            <i class="bi bi-wallet2 fs-2 text-white me-2"></i>
+                            <span class="fs-4 fw-bold text-white">ExpenseTracker</span>
+                        </a>
+                        <button id="sidebarToggle" class="btn btn-sm btn-glass d-md-none ms-2">
+                            <i class="bi bi-list"></i>
+                        </button>
+                    </div>
                     
                     <ul class="nav flex-column">
                         <li class="nav-item">
@@ -464,8 +471,13 @@
                 </div>
             </nav>
 
+            <!-- Toggle button for desktop -->
+            <button id="sidebarToggleDesktop" class="btn btn-glass position-fixed" style="top: 20px; left: 20px; z-index: 1000; display: none;">
+                <i class="bi bi-chevron-right"></i>
+            </button>
+
             <!-- Main content -->
-            <main class="col-md-9 ms-sm-auto col-lg-10 main-content">
+            <main id="main-content" class="col-md-9 ms-sm-auto col-lg-10 main-content" style="transition: all 0.3s ease;">
                 <!-- Header -->
                 <div class="page-header d-flex justify-content-between align-items-center">
                     <div>
@@ -490,6 +502,7 @@
             </main>
         </div>
     </div>
+    </div> <!-- Close app-wrapper -->
 
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
@@ -560,3 +573,49 @@
     {% block extra_js %}{% endblock %}
 </body>
 </html>
+
+<script>
+// Sidebar toggle functionality
+document.addEventListener('DOMContentLoaded', function() {
+    const sidebar = document.getElementById('sidebar');
+    const mainContent = document.getElementById('main-content');
+    const sidebarToggleDesktop = document.getElementById('sidebarToggleDesktop');
+    
+    if (sidebarToggleDesktop && sidebar && mainContent) {
+        let sidebarCollapsed = false;
+        
+        sidebarToggleDesktop.addEventListener('click', function() {
+            sidebarCollapsed = !sidebarCollapsed;
+            const icon = sidebarToggleDesktop.querySelector('i');
+            
+            if (sidebarCollapsed) {
+                sidebar.classList.remove('show');
+                sidebar.style.marginLeft = '-100%';
+                mainContent.classList.add('col-md-12');
+                mainContent.classList.remove('col-md-9', 'ms-sm-auto', 'col-lg-10');
+                icon.classList.remove('bi-chevron-right');
+                icon.classList.add('bi-list');
+            } else {
+                sidebar.classList.add('show');
+                sidebar.style.marginLeft = '0';
+                mainContent.classList.remove('col-md-12');
+                mainContent.classList.add('col-md-9', 'ms-sm-auto', 'col-lg-10');
+                icon.classList.remove('bi-list');
+                icon.classList.add('bi-chevron-right');
+            }
+        });
+        
+        // Show desktop toggle on larger screens
+        function updateSidebarToggle() {
+            if (window.innerWidth >= 768) {
+                sidebarToggleDesktop.style.display = 'block';
+            } else {
+                sidebarToggleDesktop.style.display = 'none';
+            }
+        }
+        
+        updateSidebarToggle();
+        window.addEventListener('resize', updateSidebarToggle);
+    }
+});
+</script>

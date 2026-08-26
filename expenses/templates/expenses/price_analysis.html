@@ -15,7 +15,7 @@
                 <select name="product" id="product" class="form-select">
                     <option value="">-- Select a Product --</option>
                     {% for product in products %}
-                    <option value="{{ product.id }}" {% if selected_product.id == product.id %}selected{% endif %}>
+                    <option value="{{ product.id }}" {% if selected_product and selected_product.id == product.id %}selected{% endif %}>
                         {{ product.name }} ({{ product.category.name }})
                     </option>
                     {% endfor %}
@@ -80,19 +80,24 @@
 {% endblock %}
 
 {% block extra_js %}
-{% if price_data %}
+{% if price_data and selected_product %}
 <script>
 const ctx = document.getElementById('priceChart').getContext('2d');
+
+// Get labels from the first shop's data
+const priceDataValues = Object.values({{ price_data|safe }});
+const firstShopData = priceDataValues.length > 0 ? priceDataValues[0] : [];
+
 new Chart(ctx, {
     type: 'line',
     data: {
-        labels: [{% for record in price_data.values|first|slice:":10" %}'{{ record.date|date:"M d" }}'{% if not forloop.last %}, {% endif %}{% endfor %}],
+        labels: [{% for shop_name, prices in price_data.items %}{% if forloop.first %}{% for record in prices|slice:":10" %}'{{ record.date|date:"M d" }}'{% if not forloop.last %}, {% endif %}{% endfor %}{% endif %}{% endfor %}],
         datasets: [
             {% for shop_name, prices in price_data.items %}
             {
                 label: '{{ shop_name }}',
                 data: [{% for record in prices|slice:":10" %}{{ record.price }}{% if not forloop.last %}, {% endif %}{% endfor %}],
-                borderColor: '{% cycle "#4e73df" "#1cc88a" "#36b9cc" "#f6c23e" "#e74a3b" %}',
+                borderColor: '{% cycle "#4e73df" "#1cc88a" "#36b9cc" "#f6c23e" "#e74a3b" "#858796" %}',
                 tension: 0.4
             },
             {% endfor %}
