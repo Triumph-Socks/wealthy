@@ -1,17 +1,28 @@
 from django.contrib import admin
-from django.urls import path
-from expenses import views
+from django.urls import path, include
+from rest_framework.routers import DefaultRouter
+from expenses.api_views import (
+    CategoryViewSet, ShopViewSet, ProductViewSet, ExpenseViewSet,
+    PriceHistoryViewSet, BudgetViewSet,
+    dashboard_stats, spending_trend, category_breakdown,
+    price_analysis, shop_comparison, import_csv
+)
+
+router = DefaultRouter()
+router.register(r'categories', CategoryViewSet)
+router.register(r'shops', ShopViewSet)
+router.register(r'products', ProductViewSet)
+router.register(r'expenses', ExpenseViewSet)
+router.register(r'price-history', PriceHistoryViewSet)
+router.register(r'budgets', BudgetViewSet)
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('', views.dashboard, name='dashboard'),
-    path('expenses/', views.expense_list, name='expense_list'),
-    path('expenses/add/', views.add_expense, name='expense_add'),
-    path('expenses/<int:expense_id>/delete/', views.delete_expense, name='expense_delete'),
-    path('expenses/import-csv/', views.import_csv, name='import_csv'),
-    path('price-analysis/', views.price_analysis, name='price_analysis'),
-    path('shop-comparison/', views.shop_comparison, name='shop_comparison'),
-    path('category-report/', views.category_report, name='category_report'),
-    path('api/products/', views.get_products_json, name='api_products'),
-    path('api/shops/', views.get_shops_json, name='api_shops'),
+    path('api/', include(router.urls)),
+    path('api/dashboard/stats/', dashboard_stats, name='dashboard-stats'),
+    path('api/dashboard/spending-trend/', spending_trend, name='spending-trend'),
+    path('api/dashboard/category-breakdown/', category_breakdown, name='category-breakdown'),
+    path('api/price-analysis/<int:product_id>/', price_analysis, name='price-analysis-detail'),
+    path('api/shop-comparison/', shop_comparison, name='shop-comparison'),
+    path('api/expenses/import-csv/', import_csv, name='import-csv'),
 ]
