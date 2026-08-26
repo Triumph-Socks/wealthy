@@ -2,104 +2,110 @@
 
 {% block title %}Dashboard - Expense Tracker{% endblock %}
 
+{% block page_title %}Dashboard{% endblock %}
+
 {% block content %}
 <div class="space-y-6">
-    <!-- Page Header -->
-    <div class="flex items-center justify-between">
-        <h1 class="text-2xl font-bold text-gradient">Dashboard</h1>
-        <button class="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg text-sm font-medium transition-colors">
-            <a href="{% url 'expense_list' %}">View All Expenses</a>
-        </button>
-    </div>
-
     <!-- Stats Grid -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <!-- Total Spent -->
-        <div class="glass-card p-5 hover-lift">
-            <div class="flex items-center justify-between mb-3">
-                <span class="text-gray-400 text-sm">Total Spent</span>
-                <div class="w-10 h-10 rounded-lg bg-blue-500/20 flex items-center justify-center">
-                    <svg class="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div class="bg-white rounded-xl shadow-sm p-6 hover:shadow-md transition-shadow">
+            <div class="flex items-center justify-between mb-4">
+                <div>
+                    <p class="text-sm font-medium text-slate-500">Total Spent</p>
+                    <p class="text-2xl font-bold text-slate-800 mt-1">${{ total_spent|floatformat:2 }}</p>
+                </div>
+                <div class="w-12 h-12 rounded-lg bg-blue-50 flex items-center justify-center">
+                    <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
                     </svg>
                 </div>
             </div>
-            <p class="text-2xl font-bold">${{ total_spent|floatformat:2 }}</p>
-            <p class="text-xs text-gray-400 mt-1">This month</p>
+            <p class="text-xs text-slate-400">This month</p>
         </div>
 
         <!-- Total Budget -->
-        <div class="glass-card p-5 hover-lift">
-            <div class="flex items-center justify-between mb-3">
-                <span class="text-gray-400 text-sm">Total Budget</span>
-                <div class="w-10 h-10 rounded-lg bg-green-500/20 flex items-center justify-center">
-                    <svg class="w-5 h-5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div class="bg-white rounded-xl shadow-sm p-6 hover:shadow-md transition-shadow">
+            <div class="flex items-center justify-between mb-4">
+                <div>
+                    <p class="text-sm font-medium text-slate-500">Total Budget</p>
+                    <p class="text-2xl font-bold text-slate-800 mt-1">${{ total_budget|floatformat:2 }}</p>
+                </div>
+                <div class="w-12 h-12 rounded-lg bg-green-50 flex items-center justify-center">
+                    <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
                     </svg>
                 </div>
             </div>
-            <p class="text-2xl font-bold">${{ total_budget|floatformat:2 }}</p>
-            <p class="text-xs text-gray-400 mt-1">Monthly budget</p>
+            <p class="text-xs text-slate-400">Monthly budget</p>
         </div>
 
         <!-- Remaining -->
-        <div class="glass-card p-5 hover-lift">
-            <div class="flex items-center justify-between mb-3">
-                <span class="text-gray-400 text-sm">Remaining</span>
-                <div class="w-10 h-10 rounded-lg {% if remaining_budget >= 0 %}bg-purple-500/20{% else %}bg-red-500/20{% endif %} flex items-center justify-center">
-                    <svg class="w-5 h-5 {% if remaining_budget >= 0 %}text-purple-400{% else %}text-red-400{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div class="bg-white rounded-xl shadow-sm p-6 hover:shadow-md transition-shadow">
+            <div class="flex items-center justify-between mb-4">
+                <div>
+                    <p class="text-sm font-medium text-slate-500">Remaining</p>
+                    <p class="text-2xl font-bold {% if remaining_budget < 0 %}text-red-600{% else %}text-slate-800{% endif %} mt-1">${{ remaining_budget|floatformat:2 }}</p>
+                </div>
+                <div class="w-12 h-12 rounded-lg {% if remaining_budget >= 0 %}bg-purple-50{% else %}bg-red-50{% endif %} flex items-center justify-center">
+                    <svg class="w-6 h-6 {% if remaining_budget >= 0 %}text-purple-600{% else %}text-red-600{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
                     </svg>
                 </div>
             </div>
-            <p class="text-2xl font-bold {% if remaining_budget < 0 %}text-red-400{% endif %}">${{ remaining_budget|floatformat:2 }}</p>
-            <p class="text-xs text-gray-400 mt-1">Available</p>
+            <p class="text-xs text-slate-400">Available</p>
         </div>
 
         <!-- Total Expenses -->
-        <div class="glass-card p-5 hover-lift">
-            <div class="flex items-center justify-between mb-3">
-                <span class="text-gray-400 text-sm">Expenses</span>
-                <div class="w-10 h-10 rounded-lg bg-orange-500/20 flex items-center justify-center">
-                    <svg class="w-5 h-5 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div class="bg-white rounded-xl shadow-sm p-6 hover:shadow-md transition-shadow">
+            <div class="flex items-center justify-between mb-4">
+                <div>
+                    <p class="text-sm font-medium text-slate-500">Expenses</p>
+                    <p class="text-2xl font-bold text-slate-800 mt-1">{{ expense_count }}</p>
+                </div>
+                <div class="w-12 h-12 rounded-lg bg-orange-50 flex items-center justify-center">
+                    <svg class="w-6 h-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 14l6-6m-5.5.5a2.5 2.5 0 11-3 3 2.5 2.5 0 013-3zM5.5 10.5A6.5 6.5 0 1114.5 19H5.5z"/>
                     </svg>
                 </div>
             </div>
-            <p class="text-2xl font-bold">{{ expense_count }}</p>
-            <p class="text-xs text-gray-400 mt-1">This month</p>
+            <p class="text-xs text-slate-400">This month</p>
         </div>
     </div>
 
     <!-- Charts Row -->
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <!-- Spending Trend Chart -->
-        <div class="glass-card p-6">
-            <h3 class="text-lg font-semibold mb-4">Spending Trend</h3>
-            <canvas id="spendingTrendChart" height="200"></canvas>
+        <div class="bg-white rounded-xl shadow-sm p-6">
+            <h3 class="text-lg font-semibold text-slate-800 mb-4">Spending Trend</h3>
+            <div class="h-64">
+                <canvas id="spendingTrendChart"></canvas>
+            </div>
         </div>
 
         <!-- Category Breakdown -->
-        <div class="glass-card p-6">
-            <h3 class="text-lg font-semibold mb-4">Category Breakdown</h3>
-            <canvas id="categoryChart" height="200"></canvas>
+        <div class="bg-white rounded-xl shadow-sm p-6">
+            <h3 class="text-lg font-semibold text-slate-800 mb-4">Category Breakdown</h3>
+            <div class="h-64">
+                <canvas id="categoryChart"></canvas>
+            </div>
         </div>
     </div>
 
     <!-- Budget Progress & Recent Expenses -->
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <!-- Budget Progress -->
-        <div class="lg:col-span-1 glass-card p-6">
-            <h3 class="text-lg font-semibold mb-4">Budget vs Actual</h3>
+        <div class="lg:col-span-1 bg-white rounded-xl shadow-sm p-6">
+            <h3 class="text-lg font-semibold text-slate-800 mb-4">Budget vs Actual</h3>
             <div class="space-y-4">
                 {% for item in budget_data %}
                 <div>
                     <div class="flex justify-between text-sm mb-1">
-                        <span class="text-gray-300">{{ item.category_name }}</span>
-                        <span class="text-gray-400">${{ item.actual }} / ${{ item.budget }}</span>
+                        <span class="font-medium text-slate-700">{{ item.category_name }}</span>
+                        <span class="text-slate-500">${{ item.actual }} / ${{ item.budget }}</span>
                     </div>
-                    <div class="w-full bg-gray-700/50 rounded-full h-2">
-                        <div class="h-2 rounded-full {% if item.percentage > 100 %}bg-red-500{% elif item.percentage > 80 %}bg-yellow-500{% else %}bg-green-500{% endif %}" 
+                    <div class="w-full bg-slate-100 rounded-full h-2.5">
+                        <div class="h-2.5 rounded-full {% if item.percentage > 100 %}bg-red-500{% elif item.percentage > 80 %}bg-yellow-500{% else %}bg-green-500{% endif %}" 
                              style="width: {{ item.percentage|floatformat:0 }}%"></div>
                     </div>
                 </div>
@@ -108,32 +114,32 @@
         </div>
 
         <!-- Recent Expenses -->
-        <div class="lg:col-span-2 glass-card p-6">
+        <div class="lg:col-span-2 bg-white rounded-xl shadow-sm p-6">
             <div class="flex items-center justify-between mb-4">
-                <h3 class="text-lg font-semibold">Recent Expenses</h3>
-                <a href="{% url 'expense_list' %}" class="text-sm text-blue-400 hover:text-blue-300">View All</a>
+                <h3 class="text-lg font-semibold text-slate-800">Recent Expenses</h3>
+                <a href="{% url 'expense_list' %}" class="text-sm text-blue-600 hover:text-blue-700 font-medium">View All</a>
             </div>
             <div class="overflow-x-auto">
                 <table class="w-full">
                     <thead>
-                        <tr class="text-left text-xs text-gray-400 uppercase border-b border-white/10">
-                            <th class="pb-3 font-medium">Product</th>
-                            <th class="pb-3 font-medium">Shop</th>
-                            <th class="pb-3 font-medium">Amount</th>
-                            <th class="pb-3 font-medium">Date</th>
+                        <tr class="text-left text-xs font-semibold text-slate-500 uppercase border-b border-slate-200">
+                            <th class="pb-3">Product</th>
+                            <th class="pb-3">Shop</th>
+                            <th class="pb-3">Amount</th>
+                            <th class="pb-3">Date</th>
                         </tr>
                     </thead>
                     <tbody class="text-sm">
                         {% for expense in recent_expenses %}
-                        <tr class="border-b border-white/5 last:border-0">
-                            <td class="py-3">{{ expense.product.name }}</td>
-                            <td class="py-3 text-gray-400">{{ expense.shop.name }}</td>
-                            <td class="py-3 font-medium">${{ expense.total_price|floatformat:2 }}</td>
-                            <td class="py-3 text-gray-400">{{ expense.purchase_date|date:"M d, Y" }}</td>
+                        <tr class="border-b border-slate-100 last:border-0 hover:bg-slate-50">
+                            <td class="py-3 font-medium text-slate-800">{{ expense.product.name }}</td>
+                            <td class="py-3 text-slate-600">{{ expense.shop.name }}</td>
+                            <td class="py-3 font-semibold text-slate-800">${{ expense.total_price|floatformat:2 }}</td>
+                            <td class="py-3 text-slate-600">{{ expense.purchase_date|date:"M d, Y" }}</td>
                         </tr>
                         {% empty %}
                         <tr>
-                            <td colspan="4" class="py-4 text-center text-gray-400">No expenses yet</td>
+                            <td colspan="4" class="py-4 text-center text-slate-500">No expenses yet</td>
                         </tr>
                         {% endfor %}
                     </tbody>
@@ -154,40 +160,47 @@ document.addEventListener('DOMContentLoaded', function() {
             datasets: [{
                 label: 'Spending',
                 data: [{% for item in spending_trend %}{{ item.amount }}{% if not forloop.last %}, {% endif %}{% endfor %}],
-                borderColor: '#3b82f6',
-                backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                borderColor: '#0353a4',
+                backgroundColor: 'rgba(3, 83, 164, 0.1)',
                 tension: 0.4,
-                fill: true
+                fill: true,
+                borderWidth: 2,
+                pointBackgroundColor: '#0353a4',
+                pointBorderColor: '#fff',
+                pointBorderWidth: 2,
+                pointRadius: 4,
+                pointHoverRadius: 6
             }]
         },
         options: {
             responsive: true,
             maintainAspectRatio: false,
             plugins: {
-                legend: {
-                    display: false
+                legend: { display: false },
+                tooltip: {
+                    backgroundColor: '#1e293b',
+                    padding: 12,
+                    titleFont: { size: 13 },
+                    bodyFont: { size: 13 },
+                    displayColors: false,
+                    callbacks: {
+                        label: function(context) { return '$' + context.parsed.y.toFixed(2); }
+                    }
                 }
             },
             scales: {
                 y: {
                     beginAtZero: true,
-                    grid: {
-                        color: 'rgba(255, 255, 255, 0.05)'
-                    },
+                    grid: { color: '#f1f5f9' },
                     ticks: {
-                        color: '#9ca3af',
-                        callback: function(value) {
-                            return '$' + value;
-                        }
+                        color: '#64748b',
+                        font: { size: 11 },
+                        callback: function(value) { return '$' + value; }
                     }
                 },
                 x: {
-                    grid: {
-                        display: false
-                    },
-                    ticks: {
-                        color: '#9ca3af'
-                    }
+                    grid: { display: false },
+                    ticks: { color: '#64748b', font: { size: 11 } }
                 }
             }
         }
@@ -201,15 +214,9 @@ document.addEventListener('DOMContentLoaded', function() {
             labels: [{% for item in category_data %}'{{ item.category_name }}'{% if not forloop.last %}, {% endif %}{% endfor %}],
             datasets: [{
                 data: [{% for item in category_data %}{{ item.amount }}{% if not forloop.last %}, {% endif %}{% endfor %}],
-                backgroundColor: [
-                    '#3b82f6',
-                    '#10b981',
-                    '#f59e0b',
-                    '#ef4444',
-                    '#8b5cf6',
-                    '#ec4899'
-                ],
-                borderWidth: 0
+                backgroundColor: ['#0353a4', '#0466c8', '#023e7d', '#002855', '#001845', '#33415c'],
+                borderWidth: 0,
+                hoverOffset: 4
             }]
         },
         options: {
@@ -219,10 +226,21 @@ document.addEventListener('DOMContentLoaded', function() {
                 legend: {
                     position: 'bottom',
                     labels: {
-                        color: '#e5e7eb',
+                        color: '#475569',
                         padding: 15,
                         usePointStyle: true,
-                        pointStyle: 'circle'
+                        pointStyle: 'circle',
+                        font: { size: 11 }
+                    }
+                },
+                tooltip: {
+                    backgroundColor: '#1e293b',
+                    padding: 12,
+                    titleFont: { size: 13 },
+                    bodyFont: { size: 13 },
+                    displayColors: true,
+                    callbacks: {
+                        label: function(context) { return '$' + context.parsed.y.toFixed(2); }
                     }
                 }
             }
