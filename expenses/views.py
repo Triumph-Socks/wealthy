@@ -109,11 +109,13 @@ def expense_list(request):
     
     categories = Category.objects.all()
     shops = Shop.objects.all()
+    products = Product.objects.select_related('category').order_by('name')
     
     context = {
         'expenses': expenses,
         'categories': categories,
         'shops': shops,
+        'products': products,
     }
     
     return render(request, 'expenses/expense_list.html', context)
@@ -262,3 +264,10 @@ def category_report(request):
     }
     
     return render(request, 'expenses/category_report.html', context)
+
+
+def delete_expense(request, expense_id):
+    """Delete an expense."""
+    expense = get_object_or_404(Expense, id=expense_id)
+    expense.delete()
+    return redirect('expense_list')

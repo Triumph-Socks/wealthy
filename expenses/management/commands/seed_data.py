@@ -1,6 +1,8 @@
 from django.core.management.base import BaseCommand
-from expenses.models import Category, Shop, Product, Budget
+from expenses.models import Category, Shop, Product, Budget, Expense, PriceHistory
 from decimal import Decimal
+from datetime import datetime, timedelta
+import random
 
 
 class Command(BaseCommand):
@@ -73,7 +75,6 @@ class Command(BaseCommand):
             self.stdout.write(f'Created product: {product.name}')
         
         # Create budgets for current month
-        from datetime import datetime
         current_month = datetime.now().month
         current_year = datetime.now().year
         
@@ -88,4 +89,109 @@ class Command(BaseCommand):
             if created:
                 self.stdout.write(f'Created budget for {cat_name}: ${budget_amount}')
         
-        self.stdout.write(self.style.SUCCESS('Successfully seeded database with sample data!'))
+        # Create sample expenses with price history
+        expense_configs = [
+            {'product': 'Milk', 'shop': 'Walmart', 'base_price': Decimal('1.29'), 'quantity': 2},
+            {'product': 'Milk', 'shop': 'Whole Foods', 'base_price': Decimal('1.89'), 'quantity': 1},
+            {'product': 'Milk', 'shop': 'Costco', 'base_price': Decimal('1.15'), 'quantity': 4},
+            {'product': 'Bread', 'shop': 'Walmart', 'base_price': Decimal('2.49'), 'quantity': 2},
+            {'product': 'Bread', 'shop': 'Target', 'base_price': Decimal('2.79'), 'quantity': 1},
+            {'product': 'Eggs', 'shop': 'Walmart', 'base_price': Decimal('3.99'), 'quantity': 2},
+            {'product': 'Eggs', 'shop': 'Costco', 'base_price': Decimal('4.29'), 'quantity': 3},
+            {'product': 'Rice', 'shop': 'Walmart', 'base_price': Decimal('5.49'), 'quantity': 1},
+            {'product': 'Rice', 'shop': 'Amazon Fresh', 'base_price': Decimal('4.99'), 'quantity': 2},
+            {'product': 'Chicken Breast', 'shop': 'Walmart', 'base_price': Decimal('8.99'), 'quantity': 1},
+            {'product': 'Chicken Breast', 'shop': 'Whole Foods', 'base_price': Decimal('12.99'), 'quantity': 1},
+            {'product': 'Bananas', 'shop': 'Walmart', 'base_price': Decimal('1.99'), 'quantity': 2},
+            {'product': 'Bananas', 'shop': 'Target', 'base_price': Decimal('2.29'), 'quantity': 1},
+            {'product': 'Gasoline', 'shop': 'Shell Gas Station', 'base_price': Decimal('3.49'), 'quantity': 40},
+            {'product': 'Bus Pass', 'shop': 'City Transit', 'base_price': Decimal('75.00'), 'quantity': 1},
+            {'product': 'Electricity', 'shop': 'Power Company', 'base_price': Decimal('0.12'), 'quantity': 800},
+            {'product': 'Internet', 'shop': 'Comcast', 'base_price': Decimal('69.99'), 'quantity': 1},
+            {'product': 'Movie Ticket', 'shop': 'AMC Theater', 'base_price': Decimal('15.99'), 'quantity': 2},
+            {'product': 'Restaurant Meal', 'shop': 'Local Diner', 'base_price': Decimal('25.00'), 'quantity': 2},
+            {'product': 'Pain reliever', 'shop': 'CVS Pharmacy', 'base_price': Decimal('8.99'), 'quantity': 1},
+        ]
+        
+        # Create shops for additional vendors
+        additional_shops = ['City Transit', 'Power Company', 'Comcast', 'AMC Theater', 'Local Diner']
+        for shop_name in additional_shops:
+            if shop_name not in shops:
+                shop, _ = Shop.objects.get_or_create(
+                    name=shop_name,
+                    defaults={'shop_type': 'Other', 'rating': Decimal('4.0')}
+                )
+                shops[shop_name] = shop
+        
+        today = datetime.now()
+        expenses_created = 0
+        
+        for config in expense_configs:
+            product = products.get(config['product'])
+            shop = shops.get(config['shop'])
+            
+            if not product or not shop:
+                continue
+            
+            # Create multiple historical prices (going back 3 months)
+            for weeks_ago in range(12, 0, -1):
+                expense_date = today - timedelta(weeks=weeks_ago)
+                # Add some price variation over time (inflation simulation)
+                inflation_factor = Decimal('1.0') + (Decimal('0.005') * (12 - weeks_ago))
+                price = config['base_price'] * inflation_factor
+                # Add small random variation
+                price_variation = Decimal(str(random.uniform(0.95, 1.05)))
+                final_price = (price * price_variation).quantize(Decimal('0.01'))
+                
+                expense, created = Expense.objects.get_or_create(
+                    product=product,
+                    shop=shop,
+                    purchase_date=expense_date.date(),
+                    defaults={
+                        'quantity': Decimal(str(config['quantity'])),
+                        'price_per_unit': final_price,
+                        'notes': f'Sample expense from {weeks_ago} weeks ago'
+                    }
+                )
+                
+                if created:
+                    expenses_created += 1
+                    # Create price history entry
+                    PriceHistory.objects.get_or_create(
+                        product=product,
+                        shop=shop,
+                        recorded_date=expense_date.date(),
+                        defaults={'price_per_unit': final_price}
+                    )
+        
+        # Create recent expenses (last few days)
+        recent_products = ['Milk', 'Bread', 'Eggs', 'Gasoline', 'Bananas']
+        for i, prod_name in enumerate(recent_products):
+            product = products.get(prod_name)
+            if not product:
+                continue
+            
+            shop = list(shops.values())[i % len(shops)]
+            expense_date = today - timedelta(days=i)
+            
+            expense, created = Expense.objects.get_or_create(
+                product=product,
+                shop=shop,
+                purchase_date=expense_date.date(),
+                defaults={
+                    'quantity': Decimal(str(random.randint(1, 3))),
+                    'price_per_unit': Decimal(str(round(random.uniform(2, 10), 2))),
+                    'notes': 'Recent purchase'
+                }
+            )
+            
+            if created:
+                expenses_created += 1
+                PriceHistory.objects.get_or_create(
+                    product=product,
+                    shop=shop,
+                    recorded_date=expense_date.date(),
+                    defaults={'price_per_unit': expense.price_per_unit}
+                )
+        
+        self.stdout.write(self.style.SUCCESS(f'Successfully seeded database with {expenses_created} sample expenses!'))
