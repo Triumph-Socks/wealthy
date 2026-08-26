@@ -1,46 +1,34 @@
-```
+```gitignore
 # Python
 __pycache__/
-*.py[cod]
-*$py.class
-*.so
-.Python
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
-*.egg-info/
-.installed.cfg
-*.egg
+*.pyc
+*.pyo
+*.pyd
+
+# Django
+*.log
+*.pot
+*.po
+*.mo
+db.sqlite3
+db.sqlite3-journal
 
 # Environment
 .env
 .env.local
 .env.*
-.venv/
-venv/
-ENV/
+!.env.example
 
 # Dependencies
-node_modules/
+venv/
+.venv/
+.envrc
+.pytest_cache/
+.mypy_cache/
+.coverage
+htmlcov/
 
-# Frontend build artifacts
-frontend/dist/
-frontend/build/
-frontend/node_modules/
-
-# Logs
-*.log
-
-# IDE
+# Editors
 .vscode/
 .idea/
 *.swp
@@ -49,9 +37,4 @@ frontend/node_modules/
 # OS
 .DS_Store
 Thumbs.db
-
-# Coverage
-.coverage
-htmlcov/
-coverage/
 ```
